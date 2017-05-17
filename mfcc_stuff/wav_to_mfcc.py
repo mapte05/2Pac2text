@@ -64,10 +64,10 @@ def read_files():
 		# 	print "File number:", i
 		# 	print time.time() - start
 
-	pickle_tuple = (all_features, seq_lengths, all_labels)
+	pickle_tuple = (all_features, all_labels, seq_lengths)
 	# print (len(all_features), len(seq_lengths), len(all_labels))
 	# print pickle_tuple
-	pickle_tuple_val = (all_features_val, seq_lengths_val, all_labels_val)
+	pickle_tuple_val = (all_features_val, all_labels_val, seq_lengths_val)
 	# print (len(all_features_val), len(seq_lengths_val), len(all_labels_val))
 	with open('cmu_train.dat', 'wb') as f:
 		pickle.dump(pickle_tuple, f)
