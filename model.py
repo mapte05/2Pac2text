@@ -271,8 +271,8 @@ class CTCModel():
 	
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--train_path', nargs='?', default='./mfcc_stuff/cmu_train_original.dat', type=str, help="Give path to training data")
-	parser.add_argument('--val_path', nargs='?', default='./mfcc_stuff/cmu_val_original.dat', type=str, help="Give path to val data")
+	parser.add_argument('--train_path', nargs='?', default='./mfcc_stuff/cmu_train.dat', type=str, help="Give path to training data")
+	parser.add_argument('--val_path', nargs='?', default='./mfcc_stuff/cmu_val.dat', type=str, help="Give path to val data")
 	parser.add_argument('--save_every', nargs='?', default=None, type=int, help="Save model every x iterations. Default is not saving at all.")
 	parser.add_argument('--print_every', nargs='?', default=10, type=int, help="Print some training and val examples (true and predicted sequences) every x iterations. Default is 10")
 	parser.add_argument('--save_to_file', nargs='?', default='saved_models/saved_model_epoch', type=str, help="Provide filename prefix for saving intermediate models")
