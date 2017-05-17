@@ -7,7 +7,7 @@ from os.path import isfile, join
 import os
 import re
 import time
-import pickle
+import cPickle as pickle
 import collections
 import sys
 
@@ -74,6 +74,10 @@ def read_files():
 	with open('cmu_val.dat', 'wb') as f:
 		pickle.dump(pickle_tuple_val, f)
 
-
+def load():
+	cwd = os.getcwd()	
+	with open(cwd + '/cmu_train.dat', 'rb') as f:
+		dataset = pickle.load(f) 
 
 read_files()
+load()
