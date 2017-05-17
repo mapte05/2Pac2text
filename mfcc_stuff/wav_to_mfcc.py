@@ -39,11 +39,11 @@ def read_files():
 	files = [f for f in listdir(label_dir)]
 	all_labels = []
 	for i,file in enumerate(files):
-		label = ""
+		label = []
 		with open(label_dir + "/" + file, 'r') as f:
 			for line in f.readlines():
-				label += line.rstrip('\n')
-		all_labels.append(label)
+				label += line.split()
+		all_labels.append(" ".join(label))
 		# if i % 100 == 0:
 		# 	print "File number:", i
 		# 	print time.time() - start
