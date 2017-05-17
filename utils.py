@@ -13,10 +13,7 @@ import sys
 import numpy as np
 import os.path
 import tensorflow as tf
-try:
-   import cPickle as pickle
-except:
-   import pickle
+import pickle
 
 
 import string
