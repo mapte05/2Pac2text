@@ -13,7 +13,6 @@ import sys
 import numpy as np
 import os.path
 import tensorflow as tf
-# import cPickle as pickle
 try:
    import cPickle as pickle
 except:
