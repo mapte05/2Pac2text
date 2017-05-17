@@ -286,10 +286,15 @@ if __name__ == "__main__":
 	# print(train_feature_minibatches[0])
 	# print("")
 	# print("labels")
-	# print(train_labels_minibatches[0])
+	# one_batch = train_labels_minibatches[0]
+	# one_ex = one_batch[0]
+	# print(one_batch.shape)
+	# print(one_ex.shape)
+
 	# print("")
 	# print("seq lens")
 	# print(train_seqlens_minibatches[0])
+
 
 	def pad_all_batches(batch_feature_array):
 		for batch_num in range(len(batch_feature_array)):
