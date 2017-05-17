@@ -134,7 +134,7 @@ def compare_predicted_to_true(preds, trues_tup):
 
 def preprocess_lyrics(lyrics):
 	# lyrics: list of strings corresponding to lyrics for each song/utterance
-	result = []
+	sequences = []
 	chars = get_chars_to_index_mapping()
 	for l in lyrics:
 		lower = l.lower()
@@ -148,14 +148,14 @@ def preprocess_lyrics(lyrics):
 				print("HOW DID THAT TAB GET IN THERE??")
 			else:
 				print("character: %s unknown" % c)
-		result.append(r)
-	return result
+		sequences.append(r)
+	return sequences
 
 
 def reverse(lyrics):
 	# sanity check function for preprocessing function
 	inv_index_mapping = {v: k for k, v in get_chars_to_index_mapping().items()}
-	result = []
+	sequences = []
 	chars = inv_index_mapping
 	for l in lyrics:
 		lower = l
@@ -167,8 +167,8 @@ def reverse(lyrics):
 				print("HOW DID THAT TAB GET IN THERE??")
 			else:
 				print("character: %s unknown" % c)
-		result.append("".join(r))
-	return result
+		sequences.append("".join(r))
+	return sequences
 
 
 def load_dataset(dataset_path):
@@ -176,7 +176,7 @@ def load_dataset(dataset_path):
 		dataset = pickle.load(f)
 	# assumes (examples, lyrics, seq len) format
 	sequences = preprocess_lyrics(dataset[1])
-	return(dataset[0], sequences, dataset[2])
+	return(dataset[0], sequences, [len(seq) for seq in sequences])
 
 
 
