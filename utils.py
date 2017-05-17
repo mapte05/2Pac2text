@@ -13,10 +13,7 @@ import sys
 import numpy as np
 import os.path
 import tensorflow as tf
-try:
-   import cPickle as pickle
-except:
-   import pickle
+import pickle
 
 
 import string
@@ -113,11 +110,11 @@ def get_chars_to_index_mapping():
 		result[let] = i
 	# now add common punctuation marks
 	last = len(string.ascii_lowercase)
-	to_add = [".", "?", "!", "'", ","]
+	to_add = [".", "?", "!", "'", ",", " "]
 	for i, punc in enumerate(to_add):
 		result[punc] = last + i
 	# always add blank at end
-	result[" "] = last + len(to_add) # assumes we don't see tabs 
+	result["_"] = last + len(to_add) # assumes we don't see tabs 
 	return result
 
 
@@ -143,6 +140,8 @@ def preprocess_lyrics(lyrics):
 		lower = l.lower()
 		r = []
 		for c in lower:
+			if c == "_":
+				continue
 			if c in chars:
 				r.append(chars[c])
 			elif c == "\t":
@@ -174,7 +173,7 @@ def reverse(lyrics):
 
 def load_dataset(dataset_path):
 	with open(dataset_path, 'rb') as f:
-		dataset = pickle.load(f)
+		dataset = pickle.load(f, encoding='latin1')
 	# assumes (examples, lyrics, seq len) format
 	sequences = preprocess_lyrics(dataset[1])
 	return(dataset[0], sequences, dataset[2])
