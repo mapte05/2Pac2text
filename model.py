@@ -286,7 +286,7 @@ if __name__ == "__main__":
 	val_dataset = load_dataset(args.val_path)
 
 	train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches = make_batches(train_dataset, batch_size=Config.batch_size)
-	val_feature_minibatches, val_labels_minibatches, val_seqlens_minibatches = make_batches(train_dataset, batch_size=len(val_dataset[0]))
+	val_feature_minibatches, val_labels_minibatches, val_seqlens_minibatches = make_batches(val_dataset, batch_size=len(val_dataset[0]))
 
 	print(train_labels_minibatches[8])
 	print(train_labels_minibatches[9])
