@@ -9,8 +9,13 @@ import re
 import time
 import pickle
 import collections
+import sys
 
 def read_files():
+
+	reload(sys)  
+	sys.setdefaultencoding('utf8') #fix pickle bug
+
 	cwd = os.getcwd()
 
 	# can use this code if cmu directory is somewhere else
