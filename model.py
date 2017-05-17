@@ -278,12 +278,15 @@ if __name__ == "__main__":
 	logs_path = "tensorboard/" + strftime("%Y_%m_%d_%H_%M_%S", gmtime())
 
 	train_dataset = load_dataset(args.train_path)
-	
+
 	val_dataset = load_dataset(args.val_path)
 
 	train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches = make_batches(train_dataset, batch_size=Config.batch_size)
 	val_feature_minibatches, val_labels_minibatches, val_seqlens_minibatches = make_batches(train_dataset, batch_size=len(val_dataset[0]))
 
+	print(train_labels_minibatches[8])
+	print(train_labels_minibatches[9])
+	print(train_labels_minibatches[10])
 
 	def pad_all_batches(batch_feature_array):
 		for batch_num in range(len(batch_feature_array)):
