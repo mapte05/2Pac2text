@@ -39,10 +39,9 @@ def read_files():
 		# features.add(mfcc_feat)
 		if i < (num_files/10):
 			all_features_val.append(mfcc_feat)
-			seq_lengths_val.append(len(mfcc_feat))
 		else:
 			all_features.append(mfcc_feat)
-			seq_lengths.append(len(mfcc_feat))
+
 		# if i % 100 == 0:
 		# 	print "File number:", i
 		# 	print time.time() - start
@@ -56,10 +55,15 @@ def read_files():
 		with open(label_dir + "/" + file, 'r') as f:
 			for line in f.readlines():
 				label += line.split()
+		label_str = " ".join(label)
 		if i < (num_files/10):	
-			all_labels_val.append(" ".join(label))
+			all_labels_val.append(label_str)
+			seq_lengths_val.append(len(label_str))
 		else:
-			all_labels.append(" ".join(label))
+			all_labels.append(label_str)
+			seq_lengths.append(len(label_str))
+
+
 		# if i % 100 == 0:
 		# 	print "File number:", i
 		# 	print time.time() - start
@@ -69,15 +73,20 @@ def read_files():
 	# print pickle_tuple
 	pickle_tuple_val = (all_features_val, all_labels_val, seq_lengths_val)
 	# print (len(all_features_val), len(seq_lengths_val), len(all_labels_val))
-	with open('cmu_train.dat', 'wb') as f:
+
+	with open('cmu_train_original.dat', 'wb') as f:
 		pickle.dump(pickle_tuple, f)
-	with open('cmu_val.dat', 'wb') as f:
+	with open('cmu_val_original.dat', 'wb') as f:
 		pickle.dump(pickle_tuple_val, f)
 
 def load():
 	cwd = os.getcwd()	
 	with open(cwd + '/cmu_train.dat', 'rb') as f:
 		dataset = pickle.load(f) 
+	with open('verbose.txt', 'wb') as f:
+		for i, line in enumerate(dataset[1]):
+			f.write(str(i) + '\n')
+			f.write(line + '\n')
 
 read_files()
-load()
+# load()
