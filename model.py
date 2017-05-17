@@ -21,7 +21,8 @@ import pdb
 from time import gmtime, strftime
 
 
-NUM_ALPHABET = 26
+NUM_CLASSES = len(get_chars_to_index_mapping()) # from utils, guarantees correspondence to vocabularly, includes blank
+
 
 class Config:
 	"""Holds model hyperparams and data information.
@@ -35,7 +36,10 @@ class Config:
 	num_final_features = num_mfcc_features * (2 * context_size + 1)
 
 	batch_size = 16
-	num_classes =  NUM_ALPHABET + 1 # plus 1 for blank space
+
+
+
+	num_classes =  NUM_CLASSES
 	num_hidden = 128
 
 	num_epochs = 50
@@ -281,19 +285,6 @@ if __name__ == "__main__":
 
 	train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches = make_batches(train_dataset, batch_size=Config.batch_size)
 	val_feature_minibatches, val_labels_minibatches, val_seqlens_minibatches = make_batches(train_dataset, batch_size=len(val_dataset[0]))
-
-	# print("features")
-	# print(train_feature_minibatches[0])
-	# print("")
-	# print("labels")
-	# one_batch = train_labels_minibatches[0]
-	# one_ex = one_batch[0]
-	# print(one_batch.shape)
-	# print(one_ex.shape)
-
-	# print("")
-	# print("seq lens")
-	# print(train_seqlens_minibatches[0])
 
 
 	def pad_all_batches(batch_feature_array):
