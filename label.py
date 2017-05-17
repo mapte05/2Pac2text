@@ -1,8 +1,13 @@
 from __future__ import print_function
 import csv, os
+import sys
 
-directory_path = "festival/utts"
-output_directory = "labels"
+
+assert len(sys.argv)==2 # user supplies directory with utterances and transcriptions in the data/ dir
+cmu_dir = sys.argv[1]
+
+directory_path = "data/" + cmu_dir + "/festival/utts"
+output_directory = "data/" + cmu_dir + "/labels"
 file_extension = ".utt"
 
 for filename in os.listdir(directory_path):
