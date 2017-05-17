@@ -58,6 +58,8 @@ class CTCModel():
 		data during training.  Note that when "None" is in a placeholder's shape, it's flexible
 		(so we can use different batch sizes without rebuilding the model).
 
+		Adds following nodes to the computational graph:
+
 		inputs_placeholder: Input placeholder tensor of shape (None, None, num_final_features), type tf.float32
 		targets_placeholder: Sparse placeholder, type tf.int32. You don't need to specify shape dimension.
 		seq_lens_placeholder: Sequence length placeholder tensor of shape (None), type tf.int32
@@ -78,17 +80,19 @@ class CTCModel():
 		targets_placeholder = None
 		seq_lens_placeholder = None
 
-		inputs_placeholder = tf.placeholder(tf.float32, (None, None, Config.num_final_features), name="inputs")
-		targets_placeholder = tf.sparse_placeholder(tf.int32, name="targets")
-		seq_lens_placeholder = tf.placeholder(tf.int32, (None), name="seq_lens")
+		### YOUR CODE HERE (~3 lines)
+		inputs_placeholder = tf.placeholder(tf.float32, shape=(None, None, Config.num_final_features))
+		targets_placeholder = tf.sparse_placeholder(tf.int32)
+		seq_lens_placeholder = tf.placeholder(tf.int32, shape=(None))
+		### END YOUR CODE
 
 		self.inputs_placeholder = inputs_placeholder
 		self.targets_placeholder = targets_placeholder
 		self.seq_lens_placeholder = seq_lens_placeholder
 
+
 	def create_feed_dict(self, inputs_batch, targets_batch, seq_lens_batch):
-		"""
-		Creates the feed_dict for the digit recognizer.
+		"""Creates the feed_dict for the digit recognizer.
 
 		A feed_dict takes the form of:
 
@@ -97,18 +101,25 @@ class CTCModel():
 				....
 		}
 
+		Hint: The keys for the feed_dict should be a subset of the placeholder
+					tensors created in add_placeholders.
+
 		Args:
 			inputs_batch:  A batch of input data.
 			targets_batch: A batch of targets data.
 			seq_lens_batch: A batch of seq_lens data.
 		Returns:
 			feed_dict: The feed dictionary mapping from placeholders to values.
-		"""
+		"""        
+		feed_dict = {} 
+
+		### YOUR CODE HERE (~3-4 lines)
 		feed_dict = {
-			self.inputs_placeholder: inputs_batch,
-			self.targets_placeholder: targets_batch,
-			self.seq_lens_placeholder: seq_lens_batch
+				self.inputs_placeholder: inputs_batch,
+				self.targets_placeholder: targets_batch,
+				self.seq_lens_placeholder: seq_lens_batch
 		}
+		### END YOUR CODE
 
 		return feed_dict
 
@@ -131,19 +142,22 @@ class CTCModel():
 		logits = None 
 
 		### YOUR CODE HERE (~10-15 lines)
-		config = Config()
+		cell = tf.contrib.rnn.GRUCell(Config.num_hidden) 
 
-		# init parameters
-		self.W = tf.get_variable("W", shape=[config.num_hidden, config.num_classes], initializer=tf.contrib.layers.xavier_initializer())
-		self.b = tf.Variable(tf.zeros([config.num_classes]), name="b")
+		outputs = tf.nn.dynamic_rnn(cell=cell, inputs=self.inputs_placeholder, dtype=tf.float32)[0]
 
-		cell = tf.contrib.rnn.GRUCell(config.num_hidden) 
-		outputs, last_state = tf.nn.dynamic_rnn(cell, self.inputs_placeholder, dtype=tf.float32)
-		old_shape = tf.shape(outputs)
-		f = tf.reshape(outputs, (-1, config.num_hidden))
-		logits = tf.matmul(f, self.W) + self.b
-		logits = tf.reshape(logits, (old_shape[0], old_shape[1], config.num_classes))
+		W = tf.get_variable(name="W", shape=[Config.num_hidden, Config.num_classes], dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer())
 
+		b = tf.get_variable(name="b", shape=(Config.num_classes,), dtype=tf.float32, initializer=tf.zeros_initializer())
+
+		max_timesteps = tf.shape(outputs)[1]
+		num_hidden = tf.shape(outputs)[2]
+
+		f = tf.reshape(outputs, [-1, num_hidden])
+
+		logits = tf.matmul(f, W) + b
+
+		logits = tf.reshape(logits, [-1, max_timesteps, Config.num_classes])
 		### END YOUR CODE
 
 		self.logits = logits
@@ -165,13 +179,11 @@ class CTCModel():
 		l2_cost = 0.0
 
 		### YOUR CODE HERE (~6-8 lines)
-
-		logits_trans = tf.transpose(self.logits, [1, 0, 2])
-		ctc_loss = tf.nn.ctc_loss(self.targets_placeholder, logits_trans, self.seq_lens_placeholder, ctc_merge_repeated=False)
-		# var = tf.trainable_variables()
-		l2_cost = tf.nn.l2_loss(self.W) # ight be wrong
-
-
+		self.logits = tf.transpose(self.logits, perm=[1, 0, 2])
+		ctc_loss = tf.nn.ctc_loss(self.targets_placeholder, self.logits, self.seq_lens_placeholder, ctc_merge_repeated=False)
+		for var in tf.trainable_variables():
+			if len(var.get_shape().as_list()) > 1:
+				l2_cost += tf.nn.l2_loss(var)
 		### END YOUR CODE
 
 		# Remove inf cost training examples (no path found, yet)
@@ -197,9 +209,7 @@ class CTCModel():
 		optimizer = None 
 
 		### YOUR CODE HERE (~1-2 lines)
-		
 		optimizer = tf.train.AdamOptimizer(learning_rate=Config.lr).minimize(self.loss)
-
 		### END YOUR CODE
 		
 		self.optimizer = optimizer
@@ -215,20 +225,14 @@ class CTCModel():
 		wer = None 
 
 		### YOUR CODE HERE (~2-3 lines)
-
-		logits_trans = tf.transpose(self.logits, [1, 0, 2])
-		decoded_sequences, log_probs = tf.nn.ctc_beam_search_decoder(logits_trans, self.seq_lens_placeholder, merge_repeated=False)
-		# decoded_sequence = decoded_sequences[0]
-		hypothesis = decoded_sequences[0]
-		ed = tf.edit_distance(tf.to_int32(hypothesis), self.targets_placeholder)
-		wer = tf.reduce_mean(ed)
-
+		decoded_sequence = tf.nn.ctc_beam_search_decoder(self.logits, self.seq_lens_placeholder, merge_repeated=False)[0][0]
+		wer = tf.reduce_mean(tf.edit_distance(tf.to_int32(decoded_sequence), self.targets_placeholder))
 		### END YOUR CODE
 
 		tf.summary.scalar("loss", self.loss)
 		tf.summary.scalar("wer", wer)
 
-		self.decoded_sequence = hypothesis
+		self.decoded_sequence = decoded_sequence
 		self.wer = wer
 
 	def add_summary_op(self):
@@ -268,7 +272,7 @@ class CTCModel():
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--train_path', nargs='?', default='./mfcc_stuff/cmu_train.dat', type=str, help="Give path to training data")
-	parser.add_argument('--val_path', nargs='?', default='./mfcc_stuff/cmu_train.dat', type=str, help="Give path to val data")
+	parser.add_argument('--val_path', nargs='?', default='./mfcc_stuff/cmu_val.dat', type=str, help="Give path to val data")
 	parser.add_argument('--save_every', nargs='?', default=None, type=int, help="Save model every x iterations. Default is not saving at all.")
 	parser.add_argument('--print_every', nargs='?', default=10, type=int, help="Print some training and val examples (true and predicted sequences) every x iterations. Default is 10")
 	parser.add_argument('--save_to_file', nargs='?', default='saved_models/saved_model_epoch', type=str, help="Provide filename prefix for saving intermediate models")
