@@ -173,7 +173,9 @@ def reverse(lyrics):
 
 def load_dataset(dataset_path):
 	with open(dataset_path, 'rb') as f:
-		dataset = pickle.load(f)
+		#dataset = pickle.load(f)
+		#Maneesh's pickle is messed up: dataset = pickle.load(f, encoding='latin1')
+		dataset = pickle.load(f, encoding='latin1')
 	# assumes (examples, lyrics, seq len) format
 	sequences = preprocess_lyrics(dataset[1])
 	return(dataset[0], sequences, [len(seq) for seq in sequences])
