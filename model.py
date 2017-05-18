@@ -290,10 +290,7 @@ if __name__ == "__main__":
 
 	train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches = make_batches(train_dataset, batch_size=Config.batch_size)
 	val_feature_minibatches, val_labels_minibatches, val_seqlens_minibatches = make_batches(val_dataset, batch_size=len(val_dataset[0]))
-<<<<<<< HEAD
 
-=======
->>>>>>> 7b8321b816ab4add89087aad4dd08b7f01d2d40b
 
 	def pad_all_batches(batch_feature_array):
 		for batch_num in range(len(batch_feature_array)):
