@@ -1,6 +1,6 @@
 # ignore tensorboard file and saved models
-saved_models/
-tensorboard/
+# saved_models/
+# tensorboard/
 
 # ignore huge data files - need to download individually see readme
 data/
