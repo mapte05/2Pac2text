@@ -322,7 +322,9 @@ if __name__ == "__main__":
 
 			step_ii = 0
 
-			for curr_epoch in range(Config.num_epochs):
+			#for curr_epoch in range(Config.num_epochs):
+			curr_epoch = 0
+			while True: # make this run forever on our google compute cpu for convergence
 				total_train_cost = total_train_wer = 0
 				start = time.time()
 
@@ -352,6 +354,7 @@ if __name__ == "__main__":
 				if args.save_every is not None and args.save_to_file is not None and (curr_epoch + 1) % args.save_every == 0:
 					saver.save(session, args.save_to_file, global_step=curr_epoch + 1)
 
+				curr_epoch += 1
 
 
 
