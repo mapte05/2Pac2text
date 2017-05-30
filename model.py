@@ -138,56 +138,26 @@ class CTCModel():
 			* W should be shape [num_hidden, num_classes]. num_classes for our dataset is 12
 			* tf.contrib.rnn.GRUCell, tf.contrib.rnn.MultiRNNCell and tf.nn.dynamic_rnn are of interest
 		"""
-
 		logits = None 
+		forward_cell_multi = []
+		backward_cell_multi = []
+		for _ in range(5):
+			forward_cell = tf.contrib.rnn.GRUCell(Config.num_hidden, activation=tf.nn.relu)
+			forward_cell_multi.append(forward_cell)
+			backward_cell = tf.contrib.rnn.GRUCell(Config.num_hidden, activation=tf.nn.relu)
+			backward_cell_multi.append(backward_cell)
 
-		### YOUR CODE HERE (~10-15 lines)
-		# cell = tf.contrib.rnn.GRUCell(Config.num_hidden, activation=tf.nn.relu)
-
-		# outputs = tf.nn.dynamic_rnn(cell=cell, inputs=self.inputs_placeholder, dtype=tf.float32)[0]
-
-		# W = tf.get_variable(name="W", shape=[Config.num_hidden, Config.num_classes], dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer())
-
-		# b = tf.get_variable(name="b", shape=(Config.num_classes,), dtype=tf.float32, initializer=tf.zeros_initializer())
-
-		# max_timesteps = tf.shape(outputs)[1]
-		# num_hidden = tf.shape(outputs)[2]
-
-		# f = tf.reshape(outputs, [-1, num_hidden])
-
-		# logits = tf.matmul(f, W) + b
-
-		# logits = tf.reshape(logits, [-1, max_timesteps, Config.num_classes])
-
-		# Here we go. best of luck
-		forward_cell = tf.contrib.rnn.GRUCell(Config.num_hidden, activation=tf.nn.relu)
-
-		forward_cell_multi = tf.contrib.rnn.MultiRNNCell([forward_cell for _ in range(5)])
-
-		backward_cell = tf.contrib.rnn.GRUCell(Config.num_hidden, activation=tf.nn.relu)
-
-		backward_cell_multi = tf.contrib.rnn.MultiRNNCell([backward_cell for _ in range(5)])
-
+		forward_cell_multi = tf.contrib.rnn.MultiRNNCell(forward_cell_multi)
+		backward_cell_multi = tf.contrib.rnn.MultiRNNCell(backward_cell_multi)
 		tuple_layer_outputs, _ = tf.nn.bidirectional_dynamic_rnn(forward_cell_multi, backward_cell_multi, self.inputs_placeholder, dtype=tf.float32)
-
 		outputs = tf.concat(tuple_layer_outputs, 2)
-
 		W = tf.get_variable(name="W", shape=[Config.num_hidden * 2, Config.num_classes], dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer())
-
 		b = tf.get_variable(name="b", shape=(Config.num_classes,), dtype=tf.float32, initializer=tf.zeros_initializer())
-
 		max_timesteps = tf.shape(outputs)[1]
 		num_hidden = tf.shape(outputs)[2]
-
 		f = tf.reshape(outputs, [-1, num_hidden])
-
 		logits = tf.matmul(f, W) + b
-
 		logits = tf.reshape(logits, [-1, max_timesteps, Config.num_classes])
-
-		# now need to stack layer into deep RNN (maybe using MultiRNNCell?)
-
-		### END YOUR CODE
 
 		self.logits = logits
 
