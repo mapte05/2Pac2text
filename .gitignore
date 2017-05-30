@@ -1,4 +1,5 @@
 # ignore output.txt
+overfitted_output.txt
 output.txt
 
 # ignore tensorboard file and saved models
