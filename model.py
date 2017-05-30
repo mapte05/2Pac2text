@@ -142,22 +142,34 @@ class CTCModel():
 		logits = None 
 
 		### YOUR CODE HERE (~10-15 lines)
-		cell = tf.contrib.rnn.GRUCell(Config.num_hidden, activation=tf.nn.relu)
+		# cell = tf.contrib.rnn.GRUCell(Config.num_hidden, activation=tf.nn.relu)
 
-		outputs = tf.nn.dynamic_rnn(cell=cell, inputs=self.inputs_placeholder, dtype=tf.float32)[0]
+		# outputs = tf.nn.dynamic_rnn(cell=cell, inputs=self.inputs_placeholder, dtype=tf.float32)[0]
 
-		W = tf.get_variable(name="W", shape=[Config.num_hidden, Config.num_classes], dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer())
+		# W = tf.get_variable(name="W", shape=[Config.num_hidden, Config.num_classes], dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer())
 
-		b = tf.get_variable(name="b", shape=(Config.num_classes,), dtype=tf.float32, initializer=tf.zeros_initializer())
+		# b = tf.get_variable(name="b", shape=(Config.num_classes,), dtype=tf.float32, initializer=tf.zeros_initializer())
 
-		max_timesteps = tf.shape(outputs)[1]
-		num_hidden = tf.shape(outputs)[2]
+		# max_timesteps = tf.shape(outputs)[1]
+		# num_hidden = tf.shape(outputs)[2]
 
-		f = tf.reshape(outputs, [-1, num_hidden])
+		# f = tf.reshape(outputs, [-1, num_hidden])
 
-		logits = tf.matmul(f, W) + b
+		# logits = tf.matmul(f, W) + b
 
-		logits = tf.reshape(logits, [-1, max_timesteps, Config.num_classes])
+		# logits = tf.reshape(logits, [-1, max_timesteps, Config.num_classes])
+
+		# Here we go. best of luck
+		forward_cell = tf.contrib.rnn.GRUCell(Config.num_hidden, activation=tf.nn.relu)
+
+		backward_cell = tf.contrib.rnn.GRUCell(Config.num_hidden, activation=tf.nn.relu)
+
+		tuple_layer_outputs, _ = tf.nn.bidirectional_dynamic_rnn(forward_cell, backward_cell, self.inputs_placeholder, dtype=tf.float32)
+
+		layer_outputs = tf.concat(tuple_layer_outputs, 2)
+
+		# now need to stack layer into deep RNN (maybe using MultiRNNCell?)
+
 		### END YOUR CODE
 
 		self.logits = logits
