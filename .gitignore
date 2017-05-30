@@ -1,3 +1,6 @@
+# ignore output.txt
+output.txt
+
 # ignore tensorboard file and saved models
 saved_models/
 tensorboard/
