@@ -284,7 +284,7 @@ if __name__ == "__main__":
 	train_dataset = load_dataset(args.train_path)
 
 	# try to overfit the data
-	(train_dataset[0][:10], train_dataset[1][:10], train_dataset[2][:10]) = train_dataset
+	train_dataset = (train_dataset[0][:10], train_dataset[1][:10], train_dataset[2][:10])
 
 	val_dataset = load_dataset(args.val_path)
 
