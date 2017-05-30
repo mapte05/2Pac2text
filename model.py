@@ -142,7 +142,7 @@ class CTCModel():
 		logits = None 
 
 		### YOUR CODE HERE (~10-15 lines)
-		cell = tf.contrib.rnn.GRUCell(Config.num_hidden) 
+		cell = tf.contrib.rnn.GRUCell(Config.num_hidden, activation=tf.nn.relu)
 
 		outputs = tf.nn.dynamic_rnn(cell=cell, inputs=self.inputs_placeholder, dtype=tf.float32)[0]
 
