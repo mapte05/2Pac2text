@@ -166,7 +166,20 @@ class CTCModel():
 
 		tuple_layer_outputs, _ = tf.nn.bidirectional_dynamic_rnn(forward_cell, backward_cell, self.inputs_placeholder, dtype=tf.float32)
 
-		layer_outputs = tf.concat(tuple_layer_outputs, 2)
+		outputs = tf.concat(tuple_layer_outputs, 2)
+
+		W = tf.get_variable(name="W", shape=[Config.num_hidden, Config.num_classes], dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer())
+
+		b = tf.get_variable(name="b", shape=(Config.num_classes,), dtype=tf.float32, initializer=tf.zeros_initializer())
+
+		max_timesteps = tf.shape(outputs)[1]
+		num_hidden = tf.shape(outputs)[2]
+
+		f = tf.reshape(outputs, [-1, num_hidden])
+
+		logits = tf.matmul(f, W) + b
+
+		logits = tf.reshape(logits, [-1, max_timesteps, Config.num_classes])
 
 		# now need to stack layer into deep RNN (maybe using MultiRNNCell?)
 
@@ -296,7 +309,7 @@ if __name__ == "__main__":
 	train_dataset = load_dataset(args.train_path)
 
 	# try to overfit the data
-	train_dataset = (train_dataset[0][:10], train_dataset[1][:10], train_dataset[2][:10])
+	train_dataset = (train_dataset[0][:1], train_dataset[1][:1], train_dataset[2][:1])
 
 	val_dataset = load_dataset(args.val_path)
 
