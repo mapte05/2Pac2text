@@ -6,7 +6,7 @@ echo 'starting training'
 
 # run without printing predicted
 mkdir -p saved_models
-python model.py --save_every 1
+python model.py --save_every 10
 
 # run with piping output into txt file
 # python model.py --save_every 1 > output.txt

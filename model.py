@@ -38,7 +38,7 @@ class Config:
 	batch_size = 16
 
 	num_classes =  NUM_CLASSES
-	num_hidden = 128
+	num_hidden = 500
 
 	num_epochs = 50
 	l2_lambda = 0.0000001
