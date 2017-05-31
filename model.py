@@ -23,6 +23,8 @@ from time import gmtime, strftime
 
 NUM_CLASSES = len(get_chars_to_index_mapping()) # from utils, guarantees correspondence to vocabularly, includes blank
 
+NUM_HIDDEN_LAYERS = 5
+
 
 class Config:
 	"""Holds model hyperparams and data information.
@@ -37,12 +39,12 @@ class Config:
 
 	batch_size = 16
 
-	num_classes =  NUM_CLASSES
+	num_classes = NUM_CLASSES
 	num_hidden = 500
 
 	num_epochs = 50
 	l2_lambda = 0.0000001
-	lr = 1e-4
+	lr = 1e-3
 
 
 class CTCModel():
@@ -80,11 +82,9 @@ class CTCModel():
 		targets_placeholder = None
 		seq_lens_placeholder = None
 
-		### YOUR CODE HERE (~3 lines)
 		inputs_placeholder = tf.placeholder(tf.float32, shape=(None, None, Config.num_final_features))
 		targets_placeholder = tf.sparse_placeholder(tf.int32)
 		seq_lens_placeholder = tf.placeholder(tf.int32, shape=(None))
-		### END YOUR CODE
 
 		self.inputs_placeholder = inputs_placeholder
 		self.targets_placeholder = targets_placeholder
@@ -110,16 +110,12 @@ class CTCModel():
 			seq_lens_batch: A batch of seq_lens data.
 		Returns:
 			feed_dict: The feed dictionary mapping from placeholders to values.
-		"""        
-		feed_dict = {} 
-
-		### YOUR CODE HERE (~3-4 lines)
+		"""
 		feed_dict = {
 				self.inputs_placeholder: inputs_batch,
 				self.targets_placeholder: targets_batch,
 				self.seq_lens_placeholder: seq_lens_batch
 		}
-		### END YOUR CODE
 
 		return feed_dict
 
@@ -141,7 +137,7 @@ class CTCModel():
 		logits = None 
 		forward_cell_multi = []
 		backward_cell_multi = []
-		for _ in range(5):
+		for _ in range(NUM_HIDDEN_LAYERS):
 			forward_cell = tf.contrib.rnn.GRUCell(Config.num_hidden, activation=tf.nn.relu)
 			forward_cell_multi.append(forward_cell)
 			backward_cell = tf.contrib.rnn.GRUCell(Config.num_hidden, activation=tf.nn.relu)
@@ -177,13 +173,11 @@ class CTCModel():
 		ctc_loss = []
 		l2_cost = 0.0
 
-		### YOUR CODE HERE (~6-8 lines)
 		self.logits = tf.transpose(self.logits, perm=[1, 0, 2])
 		ctc_loss = tf.nn.ctc_loss(self.targets_placeholder, self.logits, self.seq_lens_placeholder, ctc_merge_repeated=False)
 		for var in tf.trainable_variables():
 			if len(var.get_shape().as_list()) > 1:
 				l2_cost += tf.nn.l2_loss(var)
-		### END YOUR CODE
 
 		# Remove inf cost training examples (no path found, yet)
 		loss_without_invalid_paths = tf.boolean_mask(ctc_loss, tf.less(ctc_loss, tf.constant(10000.)))
@@ -205,12 +199,7 @@ class CTCModel():
 		Use tf.train.AdamOptimizer for this model. Call optimizer.minimize() on self.loss. 
 
 		"""
-		optimizer = None 
-
-		### YOUR CODE HERE (~1-2 lines)
 		optimizer = tf.train.AdamOptimizer(learning_rate=Config.lr).minimize(self.loss)
-		### END YOUR CODE
-		
 		self.optimizer = optimizer
 
 	def add_decoder_and_wer_op(self):
@@ -223,10 +212,8 @@ class CTCModel():
 		decoded_sequence = None 
 		wer = None 
 
-		### YOUR CODE HERE (~2-3 lines)
 		decoded_sequence = tf.nn.ctc_beam_search_decoder(self.logits, self.seq_lens_placeholder, merge_repeated=False)[0][0]
 		wer = tf.reduce_mean(tf.edit_distance(tf.to_int32(decoded_sequence), self.targets_placeholder))
-		### END YOUR CODE
 
 		tf.summary.scalar("loss", self.loss)
 		tf.summary.scalar("wer", wer)
@@ -283,7 +270,7 @@ if __name__ == "__main__":
 	train_dataset = load_dataset(args.train_path)
 
 	# try to overfit the data
-	train_dataset = (train_dataset[0][:1], train_dataset[1][:1], train_dataset[2][:1])
+	# train_dataset = (train_dataset[0][:10], train_dataset[1][:10], train_dataset[2][:10])
 
 	val_dataset = load_dataset(args.val_path)
 
