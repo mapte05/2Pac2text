@@ -44,7 +44,7 @@ class Config:
 
 	num_epochs = 50
 	l2_lambda = 0.0000001
-	lr = 1e-3
+	lr = 1e-4
 
 
 class CTCModel():
