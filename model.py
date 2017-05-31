@@ -40,10 +40,10 @@ class Config:
 	batch_size = 16
 
 	num_classes = NUM_CLASSES
-	num_hidden = 100
+	num_hidden = 50
 
 	num_epochs = 50
-	l2_lambda = 0.0000001
+	l2_lambda = 0.001
 	lr = 1e-3
 
 
@@ -270,7 +270,7 @@ if __name__ == "__main__":
 	train_dataset = load_dataset(args.train_path)
 
 	# try to overfit the data
-	# train_dataset = (train_dataset[0][:10], train_dataset[1][:10], train_dataset[2][:10])
+	# train_dataset = (train_dataset[0][:100], train_dataset[1][:100], train_dataset[2][:100])
 
 	val_dataset = load_dataset(args.val_path)
 
