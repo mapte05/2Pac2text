@@ -23,7 +23,7 @@ from time import gmtime, strftime
 
 NUM_CLASSES = len(get_chars_to_index_mapping()) # from utils, guarantees correspondence to vocabularly, includes blank
 
-NUM_HIDDEN_LAYERS = 5
+NUM_HIDDEN_LAYERS = 3
 
 
 class Config:
@@ -40,11 +40,11 @@ class Config:
 	batch_size = 16
 
 	num_classes = NUM_CLASSES
-	num_hidden = 500
+	num_hidden = 200
 
 	num_epochs = 50
 	l2_lambda = 0.0000001
-	lr = 1e-4
+	lr = 1e-3
 
 
 class CTCModel():
