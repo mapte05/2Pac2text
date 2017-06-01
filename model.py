@@ -305,31 +305,56 @@ def train_model(logs_path, num_batches_per_epoch,
 					saver.save(session, args.save_to_file, global_step=curr_epoch + 1)
 				curr_epoch += 1
 
+def test(test_examples, trained_weights_file):
+	with tf.Graph().as_default():
+		model = CTCModel() 
+		init = tf.global_variables_initializer()
+		with tf.Session() as session:
+			session.run(init)
+			new_saver = tf.train.import_meta_graph('%s.meta'%args.load_from_file, clear_devices=True)
+			new_saver.restore(session, trained_weights_file)
+			print("model restored with the %s checkpoint" % trained_weights_file)
+
+			# now beign testing
+			for example in test_examples
+				cost, ler, _ = model.train_on_batch(session, example[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
+
+
+
+
+
+
 
 if __name__ == "__main__":
 	args = load_args()
-	logs_path = "tensorboard/" + strftime("%Y_%m_%d_%H_%M_%S", gmtime()) + ("_lr=%f_l2=%f" % (Config.lr, Config.l2_lambda))
-	train_dataset = load_dataset(args.train_path)
-	# uncomment to overfit data set
-	#train_dataset = (train_dataset[0][:10], train_dataset[1][:10], train_dataset[2][:10])
+	if args.test_path=="no":
+		logs_path = "tensorboard/" + strftime("%Y_%m_%d_%H_%M_%S", gmtime()) + ("_lr=%f_l2=%f" % (Config.lr, Config.l2_lambda))
+		train_dataset = load_dataset(args.train_path)
+		# uncomment to overfit data set
+		#train_dataset = (train_dataset[0][:10], train_dataset[1][:10], train_dataset[2][:10])
 
-	train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches = make_batches(train_dataset, batch_size=Config.batch_size)
-	val_dataset = load_dataset(args.val_path)
-	val_feature_minibatches, val_labels_minibatches, val_seqlens_minibatches = make_batches(val_dataset, batch_size=len(val_dataset[0]))
+		train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches = make_batches(train_dataset, batch_size=Config.batch_size)
+		val_dataset = load_dataset(args.val_path)
+		val_feature_minibatches, val_labels_minibatches, val_seqlens_minibatches = make_batches(val_dataset, batch_size=len(val_dataset[0]))
 
-	def pad_all_batches(batch_feature_array):
-		for batch_num in range(len(batch_feature_array)):
-			batch_feature_array[batch_num] = pad_sequences(batch_feature_array[batch_num])[0]
-		return batch_feature_array
+		def pad_all_batches(batch_feature_array):
+			for batch_num in range(len(batch_feature_array)):
+				batch_feature_array[batch_num] = pad_sequences(batch_feature_array[batch_num])[0]
+			return batch_feature_array
 
-	train_feature_minibatches = pad_all_batches(train_feature_minibatches)
-	val_feature_minibatches = pad_all_batches(val_feature_minibatches)
-	num_examples = np.sum([batch.shape[0] for batch in train_feature_minibatches])
-	num_batches_per_epoch = int(math.ceil(num_examples / Config.batch_size))
+		train_feature_minibatches = pad_all_batches(train_feature_minibatches)
+		val_feature_minibatches = pad_all_batches(val_feature_minibatches)
+		num_examples = np.sum([batch.shape[0] for batch in train_feature_minibatches])
+		num_batches_per_epoch = int(math.ceil(num_examples / Config.batch_size))
 
-	train_model(logs_path, num_batches_per_epoch, 
-		train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches,
-		val_feature_minibatches, val_labels_minibatches, val_seqlens_minibatches)
+		train_model(logs_path, num_batches_per_epoch, 
+			train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches,
+			val_feature_minibatches, val_labels_minibatches, val_seqlens_minibatches)
+	else: # means we are testing!
+		test_examples = load_dataset(args.test_path)
+		if args.load_from_file is None:
+			raise ValueError("must specify weights to load through --load_from_file")
+		test(test_examples, args.load_from_file)
 	
 
 
