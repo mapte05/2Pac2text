@@ -174,7 +174,7 @@ class CTCModel():
 		l2_cost = 0.0
 
 		self.logits = tf.transpose(self.logits, perm=[1, 0, 2])
-		ctc_loss = tf.nn.ctc_loss(self.targets_placeholder, self.logits, self.seq_lens_placeholder, ctc_merge_repeated=False)
+		ctc_loss = tf.nn.ctc_loss(self.targets_placeholder, self.logits, self.seq_lens_placeholder, ctc_merge_repeated=False, preprocess_collapse_repeated=False)
 		for var in tf.trainable_variables():
 			if len(var.get_shape().as_list()) > 1:
 				l2_cost += tf.nn.l2_loss(var)
@@ -243,10 +243,9 @@ class CTCModel():
 			return 0
 		if train:
 			_ = session.run([self.optimizer], feed)
-
 		return batch_cost, wer, summary
 
-	def print_results(self, train_inputs_batch, train_targets_batch, train_seq_len_batch):
+	def print_results(self, session, train_inputs_batch, train_targets_batch, train_seq_len_batch):
 		train_feed = self.create_feed_dict(train_inputs_batch, train_targets_batch, train_seq_len_batch)
 		train_first_batch_preds = session.run(self.decoded_sequence, feed_dict=train_feed)
 		compare_predicted_to_true(train_first_batch_preds, train_targets_batch)        
@@ -254,8 +253,7 @@ class CTCModel():
 	def __init__(self):
 		self.build()
 
-	
-if __name__ == "__main__":
+def load_args():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--train_path', nargs='?', default='./mfcc_stuff/cmu_train.dat', type=str, help="Give path to training data")
 	parser.add_argument('--val_path', nargs='?', default='./mfcc_stuff/cmu_val.dat', type=str, help="Give path to val data")
@@ -264,28 +262,11 @@ if __name__ == "__main__":
 	parser.add_argument('--save_to_file', nargs='?', default='saved_models/saved_model_epoch', type=str, help="Provide filename prefix for saving intermediate models")
 	parser.add_argument('--load_from_file', nargs='?', default=None, type=str, help="Provide filename to load saved model")
 	parser.add_argument('--test_path', nargs='?', default="no", type=str, help="Provide test filename to do test classification")
-	args = parser.parse_args()
+	return parser.parse_args()
 
-	logs_path = "tensorboard/" + strftime("%Y_%m_%d_%H_%M_%S", gmtime()) + ("_lr=%f_l2=%f" % (Config.lr, Config.l2_lambda))
-	train_dataset = load_dataset(args.train_path)
-
-	# try to overfit the data
-	# train_dataset = (train_dataset[0][:100], train_dataset[1][:100], train_dataset[2][:100])
-
-	val_dataset = load_dataset(args.val_path)
-	train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches = make_batches(train_dataset, batch_size=Config.batch_size)
-	val_feature_minibatches, val_labels_minibatches, val_seqlens_minibatches = make_batches(val_dataset, batch_size=len(val_dataset[0]))
-
-	def pad_all_batches(batch_feature_array):
-		for batch_num in range(len(batch_feature_array)):
-			batch_feature_array[batch_num] = pad_sequences(batch_feature_array[batch_num])[0]
-		return batch_feature_array
-
-	train_feature_minibatches = pad_all_batches(train_feature_minibatches)
-	val_feature_minibatches = pad_all_batches(val_feature_minibatches)
-	num_examples = np.sum([batch.shape[0] for batch in train_feature_minibatches])
-	num_batches_per_epoch = int(math.ceil(num_examples / Config.batch_size))
-	
+def train_model(logs_path, num_batches_per_epoch, 
+		train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches,
+		val_feature_minibatches, val_labels_minibatches, val_seqlens_minibatches):
 	with tf.Graph().as_default():
 		model = CTCModel() 
 		init = tf.global_variables_initializer()
@@ -300,13 +281,11 @@ if __name__ == "__main__":
 			train_writer = tf.summary.FileWriter(logs_path + '/train', session.graph)
 			global_start = time.time()
 			step_ii = 0
-
 			#for curr_epoch in range(Config.num_epochs):
 			curr_epoch = 0
 			while True: # make this run forever on our google compute cpu for convergence
 				total_train_cost = total_train_wer = 0
 				start = time.time()
-
 				for batch in random.sample(range(num_batches_per_epoch),num_batches_per_epoch):
 					cur_batch_size = len(train_seqlens_minibatches[batch])
 					batch_cost, batch_ler, summary = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=True)
@@ -319,15 +298,39 @@ if __name__ == "__main__":
 				val_batch_cost, val_batch_ler, _ = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
 				log = "Epoch {}/{}, train_cost = {:.3f}, train_ed = {:.3f}, val_cost = {:.3f}, val_ed = {:.3f}, time = {:.3f}"
 				print(log.format(curr_epoch+1, Config.num_epochs, train_cost, train_wer, val_batch_cost, val_batch_ler, time.time() - start))
-			
 				if args.print_every is not None and (curr_epoch + 1) % args.print_every == 0: 
 					batch_ii = 0
-					model.print_results(train_feature_minibatches[batch_ii], train_labels_minibatches[batch_ii], train_seqlens_minibatches[batch_ii])
-
+					model.print_results(session, train_feature_minibatches[batch_ii], train_labels_minibatches[batch_ii], train_seqlens_minibatches[batch_ii])
 				if args.save_every is not None and args.save_to_file is not None and (curr_epoch + 1) % args.save_every == 0:
 					saver.save(session, args.save_to_file, global_step=curr_epoch + 1)
-
 				curr_epoch += 1
+
+
+if __name__ == "__main__":
+	args = load_args()
+	logs_path = "tensorboard/" + strftime("%Y_%m_%d_%H_%M_%S", gmtime()) + ("_lr=%f_l2=%f" % (Config.lr, Config.l2_lambda))
+	train_dataset = load_dataset(args.train_path)
+	# uncomment to overfit data set
+	#train_dataset = (train_dataset[0][:10], train_dataset[1][:10], train_dataset[2][:10])
+
+	train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches = make_batches(train_dataset, batch_size=Config.batch_size)
+	val_dataset = load_dataset(args.val_path)
+	val_feature_minibatches, val_labels_minibatches, val_seqlens_minibatches = make_batches(val_dataset, batch_size=len(val_dataset[0]))
+
+	def pad_all_batches(batch_feature_array):
+		for batch_num in range(len(batch_feature_array)):
+			batch_feature_array[batch_num] = pad_sequences(batch_feature_array[batch_num])[0]
+		return batch_feature_array
+
+	train_feature_minibatches = pad_all_batches(train_feature_minibatches)
+	val_feature_minibatches = pad_all_batches(val_feature_minibatches)
+	num_examples = np.sum([batch.shape[0] for batch in train_feature_minibatches])
+	num_batches_per_epoch = int(math.ceil(num_examples / Config.batch_size))
+
+	train_model(logs_path, num_batches_per_epoch, 
+		train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches,
+		val_feature_minibatches, val_labels_minibatches, val_seqlens_minibatches)
+	
 
 
 
