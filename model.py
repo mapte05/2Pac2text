@@ -43,7 +43,7 @@ class Config:
 	num_hidden = 100
 
 	num_epochs = 50
-	l2_lambda = 0.1
+	l2_lambda = 0.01
 	lr = 1e-3
 
 
@@ -298,6 +298,7 @@ def train_model(logs_path, num_batches_per_epoch,
 				val_batch_cost, val_batch_cer, _ = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
 				log = "Epoch {}/{}, train_cost = {:.3f}, train_ed = {:.3f}, val_cost = {:.3f}, val_ed = {:.3f}, time = {:.3f}"
 				print(log.format(curr_epoch+1, Config.num_epochs, train_cost, train_cer, val_batch_cost, val_batch_cer, time.time() - start))
+
 				if args.print_every is not None and (curr_epoch + 1) % args.print_every == 0: 
 					batch_ii = 0
 					model.print_results(session, train_feature_minibatches[batch_ii], train_labels_minibatches[batch_ii], train_seqlens_minibatches[batch_ii])
@@ -307,6 +308,14 @@ def train_model(logs_path, num_batches_per_epoch,
 
 def test(test_dataset, trained_weights_file):
 	test_feature_minibatches, test_labels_minibatches, test_seqlens_minibatches = make_batches(test_dataset, batch_size=len(test_dataset[0]))
+	test_feature_minibatches = pad_all_batches(test_feature_minibatches)
+
+	# FOR SANITY CHECKING
+	val_dataset = load_dataset(args.val_path)
+	val_feature_minibatches, val_labels_minibatches, val_seqlens_minibatches = make_batches(val_dataset, batch_size=len(val_dataset[0]))
+	val_feature_minibatches = pad_all_batches(val_feature_minibatches)
+	# END SANITY CHECK CODE
+
 	with tf.Graph().as_default():
 		model = CTCModel() 
 		init = tf.global_variables_initializer()
@@ -317,12 +326,26 @@ def test(test_dataset, trained_weights_file):
 			print("model restored with the %s checkpoint" % trained_weights_file)
 
 			# now begin testing
+			start = time.time()
 			test_batch_cost, test_batch_cer, _ = model.train_on_batch(session, test_feature_minibatches[0], test_labels_minibatches[0], test_seqlens_minibatches[0], train=False)
+
+			# FOR SANITY CHECKING
+			# This should print out the same thing as the val_cost and val_ed for the saved run.
+			val_batch_cost, val_batch_cer, _ = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
+			log = "val_cost = {:.3f}, val_ed = {:.3f}, time = {:.3f}"
+			print(log.format(val_batch_cost, val_batch_cer, time.time() - start))
+			# END SANITY CHECK CODE
+
 			log = "test_cost = {:.3f}, test_ed = {:.3f}, time = {:.3f}"
 			print(log.format(test_batch_cost, test_batch_cer, time.time() - start))
 			if args.print_every is not None: 
 				batch_ii = 0
 				model.print_results(session, test_feature_minibatches[batch_ii], test_labels_minibatches[batch_ii], test_seqlens_minibatches[batch_ii])
+
+def pad_all_batches(batch_feature_array):
+	for batch_num in range(len(batch_feature_array)):
+		batch_feature_array[batch_num] = pad_sequences(batch_feature_array[batch_num])[0]
+	return batch_feature_array
 
 if __name__ == "__main__":
 	args = load_args()
@@ -330,16 +353,11 @@ if __name__ == "__main__":
 		logs_path = "tensorboard/" + strftime("%Y_%m_%d_%H_%M_%S", gmtime()) + ("_lr=%f_l2=%f" % (Config.lr, Config.l2_lambda))
 		train_dataset = load_dataset(args.train_path)
 		# uncomment to overfit data set
-		#train_dataset = (train_dataset[0][:10], train_dataset[1][:10], train_dataset[2][:10])
+		train_dataset = (train_dataset[0][:10], train_dataset[1][:10], train_dataset[2][:10])
 
 		train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches = make_batches(train_dataset, batch_size=Config.batch_size)
 		val_dataset = load_dataset(args.val_path)
 		val_feature_minibatches, val_labels_minibatches, val_seqlens_minibatches = make_batches(val_dataset, batch_size=len(val_dataset[0]))
-
-		def pad_all_batches(batch_feature_array):
-			for batch_num in range(len(batch_feature_array)):
-				batch_feature_array[batch_num] = pad_sequences(batch_feature_array[batch_num])[0]
-			return batch_feature_array
 
 		train_feature_minibatches = pad_all_batches(train_feature_minibatches)
 		val_feature_minibatches = pad_all_batches(val_feature_minibatches)
