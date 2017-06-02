@@ -202,24 +202,24 @@ class CTCModel():
 		optimizer = tf.train.AdamOptimizer(learning_rate=Config.lr).minimize(self.loss)
 		self.optimizer = optimizer
 
-	def add_decoder_and_wer_op(self):
+	def add_decoder_and_cer_op(self):
 		"""Setup the decoder and add the word error rate calculations here. 
 
 		Tip: You will find tf.nn.ctc_beam_search_decoder and tf.edit_distance methods useful here. 
-		Also, report the mean WER over the batch in variable wer
+		Also, report the mean cer over the batch in variable cer
 
 		"""        
 		decoded_sequence = None 
-		wer = None 
+		cer = None 
 
 		decoded_sequence = tf.nn.ctc_beam_search_decoder(self.logits, self.seq_lens_placeholder, merge_repeated=False)[0][0]
-		wer = tf.reduce_mean(tf.edit_distance(tf.to_int32(decoded_sequence), self.targets_placeholder))
+		cer = tf.reduce_mean(tf.edit_distance(tf.to_int32(decoded_sequence), self.targets_placeholder))
 
 		tf.summary.scalar("loss", self.loss)
-		tf.summary.scalar("wer", wer)
+		tf.summary.scalar("cer", cer)
 
 		self.decoded_sequence = decoded_sequence
-		self.wer = wer
+		self.cer = cer
 
 	def add_summary_op(self):
 		self.merged_summary_op = tf.summary.merge_all()
@@ -231,19 +231,19 @@ class CTCModel():
 		self.add_prediction_op()
 		self.add_loss_op()
 		self.add_training_op()       
-		self.add_decoder_and_wer_op()
+		self.add_decoder_and_cer_op()
 		self.add_summary_op()
 		
 
 	def train_on_batch(self, session, train_inputs_batch, train_targets_batch, train_seq_len_batch, train=True):
 		feed = self.create_feed_dict(train_inputs_batch, train_targets_batch, train_seq_len_batch)
-		batch_cost, wer, batch_num_valid_ex, summary = session.run([self.loss, self.wer, self.num_valid_examples, self.merged_summary_op], feed)
+		batch_cost, cer, batch_num_valid_ex, summary = session.run([self.loss, self.cer, self.num_valid_examples, self.merged_summary_op], feed)
 
 		if math.isnan(batch_cost): # basically all examples in this batch have been skipped 
 			return 0
 		if train:
 			_ = session.run([self.optimizer], feed)
-		return batch_cost, wer, summary
+		return batch_cost, cer, summary
 
 	def print_results(self, session, train_inputs_batch, train_targets_batch, train_seq_len_batch):
 		train_feed = self.create_feed_dict(train_inputs_batch, train_targets_batch, train_seq_len_batch)
@@ -284,20 +284,20 @@ def train_model(logs_path, num_batches_per_epoch,
 			#for curr_epoch in range(Config.num_epochs):
 			curr_epoch = 0
 			while True: # make this run forever on our google compute cpu for convergence
-				total_train_cost = total_train_wer = 0
+				total_train_cost = total_train_cer = 0
 				start = time.time()
 				for batch in random.sample(range(num_batches_per_epoch),num_batches_per_epoch):
 					cur_batch_size = len(train_seqlens_minibatches[batch])
-					batch_cost, batch_ler, summary = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=True)
+					batch_cost, batch_cer, summary = model.train_on_batch(session, train_feature_minibatches[batch], train_labels_minibatches[batch], train_seqlens_minibatches[batch], train=True)
 					total_train_cost += batch_cost * cur_batch_size
-					total_train_wer += batch_ler * cur_batch_size
+					total_train_cer += batch_cer * cur_batch_size
 					train_writer.add_summary(summary, step_ii)
 					step_ii += 1 
 				train_cost = total_train_cost / num_examples
-				train_wer = total_train_wer / num_examples
-				val_batch_cost, val_batch_ler, _ = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
+				train_cer = total_train_cer / num_examples
+				val_batch_cost, val_batch_cer, _ = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
 				log = "Epoch {}/{}, train_cost = {:.3f}, train_ed = {:.3f}, val_cost = {:.3f}, val_ed = {:.3f}, time = {:.3f}"
-				print(log.format(curr_epoch+1, Config.num_epochs, train_cost, train_wer, val_batch_cost, val_batch_ler, time.time() - start))
+				print(log.format(curr_epoch+1, Config.num_epochs, train_cost, train_cer, val_batch_cost, val_batch_cer, time.time() - start))
 				if args.print_every is not None and (curr_epoch + 1) % args.print_every == 0: 
 					batch_ii = 0
 					model.print_results(session, train_feature_minibatches[batch_ii], train_labels_minibatches[batch_ii], train_seqlens_minibatches[batch_ii])
@@ -305,7 +305,8 @@ def train_model(logs_path, num_batches_per_epoch,
 					saver.save(session, args.save_to_file, global_step=curr_epoch + 1)
 				curr_epoch += 1
 
-def test(test_examples, trained_weights_file):
+def test(test_dataset, trained_weights_file):
+	test_feature_minibatches, test_labels_minibatches, test_seqlens_minibatches = make_batches(test_dataset, batch_size=len(test_dataset[0]))
 	with tf.Graph().as_default():
 		model = CTCModel() 
 		init = tf.global_variables_initializer()
@@ -315,15 +316,13 @@ def test(test_examples, trained_weights_file):
 			new_saver.restore(session, trained_weights_file)
 			print("model restored with the %s checkpoint" % trained_weights_file)
 
-			# now beign testing
-			for example in test_examples
-				cost, ler, _ = model.train_on_batch(session, example[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
-
-
-
-
-
-
+			# now begin testing
+			test_batch_cost, test_batch_cer, _ = model.train_on_batch(session, test_feature_minibatches[0], test_labels_minibatches[0], test_seqlens_minibatches[0], train=False)
+			log = "test_cost = {:.3f}, test_ed = {:.3f}, time = {:.3f}"
+			print(log.format(test_batch_cost, test_batch_cer, time.time() - start))
+			if args.print_every is not None: 
+				batch_ii = 0
+				model.print_results(session, test_feature_minibatches[batch_ii], test_labels_minibatches[batch_ii], test_seqlens_minibatches[batch_ii])
 
 if __name__ == "__main__":
 	args = load_args()
@@ -351,10 +350,10 @@ if __name__ == "__main__":
 			train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches,
 			val_feature_minibatches, val_labels_minibatches, val_seqlens_minibatches)
 	else: # means we are testing!
-		test_examples = load_dataset(args.test_path)
 		if args.load_from_file is None:
 			raise ValueError("must specify weights to load through --load_from_file")
-		test(test_examples, args.load_from_file)
+		test_dataset = load_dataset(args.test_path)
+		test(test_dataset, args.load_from_file)
 	
 
 
