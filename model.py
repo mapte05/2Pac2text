@@ -82,9 +82,9 @@ class CTCModel():
 		targets_placeholder = None
 		seq_lens_placeholder = None
 
-		inputs_placeholder = tf.placeholder(tf.float32, shape=(None, None, Config.num_final_features))
-		targets_placeholder = tf.sparse_placeholder(tf.int32)
-		seq_lens_placeholder = tf.placeholder(tf.int32, shape=(None))
+		inputs_placeholder = tf.placeholder(tf.float32, shape=(None, None, Config.num_final_features), name='inputs_placeholder')
+		targets_placeholder = tf.sparse_placeholder(tf.int32, name='targets_placeholder')
+		seq_lens_placeholder = tf.placeholder(tf.int32, shape=(None), name='seq_lens_placeholder')
 
 		self.inputs_placeholder = inputs_placeholder
 		self.targets_placeholder = targets_placeholder
@@ -152,7 +152,7 @@ class CTCModel():
 		max_timesteps = tf.shape(outputs)[1]
 		num_hidden = tf.shape(outputs)[2]
 		f = tf.reshape(outputs, [-1, num_hidden])
-		logits = tf.matmul(f, W) + b
+		logits = tf.add(tf.matmul(f, W), b)
 		logits = tf.reshape(logits, [-1, max_timesteps, Config.num_classes])
 
 		self.logits = logits
@@ -174,6 +174,7 @@ class CTCModel():
 		l2_cost = 0.0
 
 		self.logits = tf.transpose(self.logits, perm=[1, 0, 2])
+		tf.identity(self.logits, name='logits')
 		ctc_loss = tf.nn.ctc_loss(self.targets_placeholder, self.logits, self.seq_lens_placeholder, ctc_merge_repeated=False, preprocess_collapse_repeated=False)
 		for var in tf.trainable_variables():
 			if len(var.get_shape().as_list()) > 1:
@@ -213,7 +214,7 @@ class CTCModel():
 		cer = None 
 
 		decoded_sequence = tf.nn.ctc_beam_search_decoder(self.logits, self.seq_lens_placeholder, merge_repeated=False)[0][0]
-		cer = tf.reduce_mean(tf.edit_distance(tf.to_int32(decoded_sequence), self.targets_placeholder))
+		cer = tf.reduce_mean(tf.edit_distance(tf.to_int32(decoded_sequence), self.targets_placeholder), name='cer')
 
 		tf.summary.scalar("loss", self.loss)
 		tf.summary.scalar("cer", cer)
@@ -268,16 +269,19 @@ def train_model(logs_path, num_batches_per_epoch,
 		train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches,
 		val_feature_minibatches, val_labels_minibatches, val_seqlens_minibatches):
 	with tf.Graph().as_default():
-		model = CTCModel() 
+		model = CTCModel()
 		init = tf.global_variables_initializer()
-		saver = tf.train.Saver(tf.trainable_variables())
+		saver = tf.train.Saver()
 		with tf.Session() as session:
 			# Initializate the weights and biases
 			session.run(init)
-			if args.load_from_file is not None:
-				new_saver = tf.train.import_meta_graph('%s.meta'%args.load_from_file, clear_devices=True)
-				new_saver.restore(session, args.load_from_file)
-				print("model restored with the %s checkpoint" % args.load_from_file)
+
+			# Don't think the following block would actually work
+			# if args.load_from_file is not None:
+			# 	new_saver = tf.train.import_meta_graph('%s.meta'%args.load_from_file, clear_devices=True)
+			# 	new_saver.restore(session, args.load_from_file)
+			# 	print("model restored with the %s checkpoint" % args.load_from_file)
+
 			train_writer = tf.summary.FileWriter(logs_path + '/train', session.graph)
 			global_start = time.time()
 			step_ii = 0
@@ -310,37 +314,43 @@ def test(test_dataset, trained_weights_file):
 	test_feature_minibatches, test_labels_minibatches, test_seqlens_minibatches = make_batches(test_dataset, batch_size=len(test_dataset[0]))
 	test_feature_minibatches = pad_all_batches(test_feature_minibatches)
 
-	# FOR SANITY CHECKING
-	val_dataset = load_dataset(args.val_path)
-	val_feature_minibatches, val_labels_minibatches, val_seqlens_minibatches = make_batches(val_dataset, batch_size=len(val_dataset[0]))
-	val_feature_minibatches = pad_all_batches(val_feature_minibatches)
-	# END SANITY CHECK CODE
-
 	with tf.Graph().as_default():
-		model = CTCModel() 
-		init = tf.global_variables_initializer()
 		with tf.Session() as session:
-			session.run(init)
 			new_saver = tf.train.import_meta_graph('%s.meta'%args.load_from_file, clear_devices=True)
 			new_saver.restore(session, trained_weights_file)
 			print("model restored with the %s checkpoint" % trained_weights_file)
 
 			# now begin testing
 			start = time.time()
-			test_batch_cost, test_batch_cer, _ = model.train_on_batch(session, test_feature_minibatches[0], test_labels_minibatches[0], test_seqlens_minibatches[0], train=False)
 
-			# FOR SANITY CHECKING
-			# This should print out the same thing as the val_cost and val_ed for the saved run.
-			val_batch_cost, val_batch_cer, _ = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
-			log = "val_cost = {:.3f}, val_ed = {:.3f}, time = {:.3f}"
-			print(log.format(val_batch_cost, val_batch_cer, time.time() - start))
-			# END SANITY CHECK CODE
+			cer = tf.get_default_graph().get_tensor_by_name('cer:0')
 
-			log = "test_cost = {:.3f}, test_ed = {:.3f}, time = {:.3f}"
-			print(log.format(test_batch_cost, test_batch_cer, time.time() - start))
+			test_feed_dict = {
+				'inputs_placeholder:0': test_feature_minibatches[0],
+				'targets_placeholder/indices:0': test_labels_minibatches[0][0],
+				'targets_placeholder/values:0': test_labels_minibatches[0][1],
+				'targets_placeholder/shape:0': test_labels_minibatches[0][2],
+				'seq_lens_placeholder:0': test_seqlens_minibatches[0]
+			}
+
+			test_cer = session.run([cer], test_feed_dict)
+			log = "test_cer = {:.3f}, time = {:.3f}"
+			print(log.format(test_cer[0], time.time() - start))
+
 			if args.print_every is not None: 
 				batch_ii = 0
-				model.print_results(session, test_feature_minibatches[batch_ii], test_labels_minibatches[batch_ii], test_seqlens_minibatches[batch_ii])
+				logits = tf.get_default_graph().get_tensor_by_name('logits:0')
+				seq_lens_placeholder = tf.get_default_graph().get_tensor_by_name('seq_lens_placeholder:0')
+				decoded_sequence = tf.nn.ctc_beam_search_decoder(logits, seq_lens_placeholder, merge_repeated=False)[0][0]
+				test_results_feed_dict = {
+					'inputs_placeholder:0': test_feature_minibatches[batch_ii],
+					'targets_placeholder/indices:0': test_labels_minibatches[batch_ii][0],
+					'targets_placeholder/values:0': test_labels_minibatches[batch_ii][1],
+					'targets_placeholder/shape:0': test_labels_minibatches[batch_ii][2],
+					'seq_lens_placeholder:0': test_seqlens_minibatches[batch_ii]
+				}
+				train_first_batch_preds = session.run(decoded_sequence, feed_dict=test_results_feed_dict)
+				compare_predicted_to_true(train_first_batch_preds, test_labels_minibatches[batch_ii]) 
 
 def pad_all_batches(batch_feature_array):
 	for batch_num in range(len(batch_feature_array)):
@@ -373,6 +383,3 @@ if __name__ == "__main__":
 		test_dataset = load_dataset(args.test_path)
 		test(test_dataset, args.load_from_file)
 	
-
-
-
