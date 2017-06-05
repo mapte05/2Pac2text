@@ -82,9 +82,9 @@ class CTCModel():
 		targets_placeholder = None
 		seq_lens_placeholder = None
 
-		inputs_placeholder = tf.placeholder(tf.float32, shape=(None, None, Config.num_final_features))
-		targets_placeholder = tf.sparse_placeholder(tf.int32)
-		seq_lens_placeholder = tf.placeholder(tf.int32, shape=(None))
+		inputs_placeholder = tf.placeholder(tf.float32, shape=(None, None, Config.num_final_features), name='inputs')
+		targets_placeholder = tf.sparse_placeholder(tf.int32, name='targets')
+		seq_lens_placeholder = tf.placeholder(tf.int32, shape=(None), name='seq_len')
 
 		self.inputs_placeholder = inputs_placeholder
 		self.targets_placeholder = targets_placeholder
@@ -237,6 +237,7 @@ class CTCModel():
 
 	def train_on_batch(self, session, train_inputs_batch, train_targets_batch, train_seq_len_batch, train=True):
 		feed = self.create_feed_dict(train_inputs_batch, train_targets_batch, train_seq_len_batch)
+
 		batch_cost, cer, batch_num_valid_ex, summary = session.run([self.loss, self.cer, self.num_valid_examples, self.merged_summary_op], feed)
 
 		if math.isnan(batch_cost): # basically all examples in this batch have been skipped 
@@ -250,8 +251,16 @@ class CTCModel():
 		train_first_batch_preds = session.run(self.decoded_sequence, feed_dict=train_feed)
 		compare_predicted_to_true(train_first_batch_preds, train_targets_batch)        
 
-	def __init__(self):
-		self.build()
+	def build_test(self):
+		self.add_placeholders()
+		self.add_prediction_op()
+		self.add_loss_op()
+		#self.add_training_op()       
+		self.add_decoder_and_cer_op()
+		self.add_summary_op()
+
+	# def __init__(self):
+		# self.build()
 
 def load_args():
 	parser = argparse.ArgumentParser()
@@ -269,6 +278,7 @@ def train_model(logs_path, num_batches_per_epoch,
 		val_feature_minibatches, val_labels_minibatches, val_seqlens_minibatches):
 	with tf.Graph().as_default():
 		model = CTCModel() 
+		model.build()
 		init = tf.global_variables_initializer()
 		saver = tf.train.Saver(tf.trainable_variables())
 		with tf.Session() as session:
@@ -318,28 +328,40 @@ def test(test_dataset, trained_weights_file):
 
 
 	with tf.Session() as sess:
-		saver = tf.train.import_meta_graph('saved_models/saved_model_epoch-2950.meta')
-		saver.restore(sess,"saved_models/saved_model_epoch-2950")
-		sess.run(tf.global_variables_initializer())
+		saver = tf.train.import_meta_graph('saved_models/saved_model_epoch-2.meta')
+		saver.restore(sess,"saved_models/saved_model_epoch-2")
+		# sess.run(tf.global_variables_initializer())
 		variable_names = [v.name for v in tf.trainable_variables()]
+		names = [v.name for v in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)]
+		print(names)
 		print(sess.run('b:0'))
 		
+
 		print("now about to test")
-		model = CTCModel() 
+		# model = CTCModel()
+		# model.build_test()
+		#self.loss, self.cer, self.num_valid_examples, self.merged_summary_op
+		print(model.loss.name)
+		print(model.cer.name)
+		print(model.num_valid_examples.name)
+		print(model.merged_summary_op.name)
+
+
+		print(sess.run('b:0'))
 		start = time.time()
-		for i in range(len(test_feature_minibatches)):
-			test_batch_cost, test_batch_cer, _ = model.train_on_batch(session, test_feature_minibatches[i], test_labels_minibatches[i], test_seqlens_minibatches[i], train=False)
-			# FOR SANITY CHECKING
-			# This should print out the same thing as the val_cost and val_ed for the saved run.
-			val_batch_cost, val_batch_cer, _ = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
-			log = "val_cost = {:.3f}, val_ed = {:.3f}, time = {:.3f}"
-			print(log.format(val_batch_cost, val_batch_cer, time.time() - start))
-			# END SANITY CHECK CODE
-			log = "test_cost = {:.3f}, test_ed = {:.3f}, time = {:.3f}"
-			print(log.format(test_batch_cost, test_batch_cer, time.time() - start))
-			if args.print_every is not None: 
-				batch_ii = 0
-				model.print_results(session, test_feature_minibatches[batch_ii], test_labels_minibatches[batch_ii], test_seqlens_minibatches[batch_ii])
+		# for i in range(len(test_feature_minibatches)):
+		test_batch_cost, test_batch_cer, _ = model.train_on_batch(sess, test_feature_minibatches[0], test_labels_minibatches[0], test_seqlens_minibatches[0], train=False)
+		# FOR SANITY CHECKING
+		# This should print out the same thing as the val_cost and val_ed for the saved run.
+		val_batch_cost, val_batch_cer, _ = model.train_on_batch(sess, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
+		log = "val_cost = {:.3f}, val_ed = {:.3f}, time = {:.3f}"
+		print(log.format(val_batch_cost, val_batch_cer, time.time() - start))
+		# END SANITY CHECK CODE
+		log = "test_cost = {:.3f}, test_ed = {:.3f}, time = {:.3f}"
+		print(log.format(test_batch_cost, test_batch_cer, time.time() - start))
+		if args.print_every is not None: 
+			batch_ii = 0
+			model.print_results(session, test_feature_minibatches[batch_ii], test_labels_minibatches[batch_ii], test_seqlens_minibatches[batch_ii])
 
 
 		# print(sess.run('w1:0'))
@@ -381,7 +403,7 @@ if __name__ == "__main__":
 		logs_path = "tensorboard/" + strftime("%Y_%m_%d_%H_%M_%S", gmtime()) + ("_lr=%f_l2=%f" % (Config.lr, Config.l2_lambda))
 		train_dataset = load_dataset(args.train_path)
 		# uncomment to overfit data set
-		train_dataset = (train_dataset[0][:10], train_dataset[1][:10], train_dataset[2][:10])
+		# train_dataset = (train_dataset[0][:10], train_dataset[1][:10], train_dataset[2][:10])
 
 		train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches = make_batches(train_dataset, batch_size=Config.batch_size)
 		val_dataset = load_dataset(args.val_path)
