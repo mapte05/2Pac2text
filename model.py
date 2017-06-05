@@ -319,7 +319,6 @@ def test(test_dataset, trained_weights_file):
 			new_saver = tf.train.import_meta_graph('%s.meta'%args.load_from_file, clear_devices=True)
 			new_saver.restore(session, trained_weights_file)
 			print("model restored with the %s checkpoint" % trained_weights_file)
-
 			# now begin testing
 			start = time.time()
 
