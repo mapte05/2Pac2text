@@ -367,7 +367,7 @@ def pad_all_batches(batch_feature_array):
 if __name__ == "__main__":
 	args = load_args()
 	if args.test_path=="no":
-		logs_path = "tensorboard/" + strftime("%Y_%m_%d_%H_%M_%S", gmtime()) + ("_lr=%f_l2=%f" % (Config.lr, Config.l2_lambda))
+		logs_path = "tensorboard/" + strftime("%Y_%m_%d_%H_%M_%S", gmtime()) + ("_lr=%f" % Config.lr)
 		train_dataset = load_dataset(args.train_path)
 		# uncomment to overfit data set
 		train_dataset = (train_dataset[0][:10], train_dataset[1][:10], train_dataset[2][:10])
