@@ -25,7 +25,7 @@ NUM_CLASSES = len(get_chars_to_index_mapping()) # from utils, guarantees corresp
 
 NUM_HIDDEN_LAYERS = 2
 
-DROPOUT_KEEP_PROB = 1.0
+DROPOUT_KEEP_PROB = 0.5
 
 
 class Config:
