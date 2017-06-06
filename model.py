@@ -286,6 +286,7 @@ def train_model(logs_path, num_batches_per_epoch,
 			# 	print("model restored with the %s checkpoint" % args.load_from_file)
 
 			train_writer = tf.summary.FileWriter(logs_path + '/train', session.graph)
+			val_writer = tf.summary.FileWriter(logs_path + '/dev', session.graph)
 			global_start = time.time()
 			step_ii = 0
 			#for curr_epoch in range(Config.num_epochs):
@@ -302,7 +303,8 @@ def train_model(logs_path, num_batches_per_epoch,
 					step_ii += 1 
 				train_cost = total_train_cost / num_examples
 				train_cer = total_train_cer / num_examples
-				val_batch_cost, val_batch_cer, _ = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
+				val_batch_cost, val_batch_cer, summary = model.train_on_batch(session, val_feature_minibatches[0], val_labels_minibatches[0], val_seqlens_minibatches[0], train=False)
+				val_writer.add_summary(summary, step_ii)
 				log = "Epoch {}/{}, train_cost = {:.3f}, train_ed = {:.3f}, val_cost = {:.3f}, val_ed = {:.3f}, time = {:.3f}"
 				print(log.format(curr_epoch+1, Config.num_epochs, train_cost, train_cer, val_batch_cost, val_batch_cer, time.time() - start))
 
