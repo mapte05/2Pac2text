@@ -9,16 +9,17 @@ PCT_TRAIN =.70
 PCT_DEV = .15
 PCT_TEST = .15
 hop_length = 512
-n_mfcc = 39
+# n_mfcc = 39
+n_mfcc = 13
 
 
 def split_and_save_data(dataset):
 
 	if dataset == 'wsj0_si':
-		dirname = "data\\wsj0_raw_data\\**\\wsj0\\si_tr_s\\**\\*.wv1"
-	dirname1 = "data\\wsj0_raw_data\\**\\wsj0\\s*_tr_*\\**\\*.wv1"
-	dirname2 = "data\\wsj0_raw_data\\**\\wsj0\\s*_dt_*\\**\\*.wv1"
-	dirname3 = "data\\wsj0_raw_data\\**\\wsj0\\s*_et_*\\**\\*.wv1"
+		dirname = "data/wsj0_raw_data/**/wsj0/si_tr_s/**/*.wv1"
+	dirname1 = "data/wsj0_raw_data/**/wsj0/s*_tr_*/**/*.wv1"
+	dirname2 = "data/wsj0_raw_data/**/wsj0/s*_dt_*/**/*.wv1"
+	dirname3 = "data/wsj0_raw_data/**/wsj0/s*_et_*/**/*.wv1"
 
 	fp = glob2.glob(dirname1)+glob2.glob(dirname2)+glob2.glob(dirname3)
 
@@ -78,36 +79,36 @@ def split_and_save_data(dataset):
 
 	print "Writing Data to Files..."
 
-	data_split_pkl = open('data\\'+dataset+'\\data_split.pkl', 'wb')
+	data_split_pkl = open('data/'+dataset+'/data_split.pkl', 'wb')
 	pickle.dump(data_split, data_split_pkl)
 	data_split_pkl.close()
-	print "Data splits saved to data\\"+dataset+"\\data_split.pkl"
+	print "Data splits saved to data/"+dataset+"/data_split.pkl"
 
 
-	fp_to_id_pkl = open('data\\'+dataset+'\\filepath_to_id_no.pkl', 'wb')
+	fp_to_id_pkl = open('data/'+dataset+'/filepath_to_id_no.pkl', 'wb')
 	pickle.dump(fp_to_id, fp_to_id_pkl)
 	fp_to_id_pkl.close()
-	print "Map of filepath names to id number saved to data\\"+dataset+"\\filepath_to_id_no.pkl"
+	print "Map of filepath names to id number saved to data/"+dataset+"/filepath_to_id_no.pkl"
 
-	id_to_fp_pkl = open('data\\'+dataset+'\\id_no_to_filepath.pkl', 'wb')
+	id_to_fp_pkl = open('data/'+dataset+'/id_no_to_filepath.pkl', 'wb')
 	pickle.dump(id_to_fp, id_to_fp_pkl)
 	id_to_fp_pkl.close()
-	print "Map of id number to filepath name saved to data\\"+dataset+"\\id_no_to_filepath.pkl"
+	print "Map of id number to filepath name saved to data/"+dataset+"/id_no_to_filepath.pkl"
 
-	mfcc_train_pkl = open('data\\'+dataset+'\\mfcc_train.pkl', 'wb')
+	mfcc_train_pkl = open('data/'+dataset+'/mfcc_train.pkl', 'wb')
 	pickle.dump(mfcc_train, mfcc_train_pkl)
 	mfcc_train_pkl.close()
-	print "Train set MFCC features saved to data\\"+dataset+"\\mfcc_train.pkl"
+	print "Train set MFCC features saved to data/"+dataset+"/mfcc_train.pkl"
 
-	mfcc_dev_pkl = open('data\\'+dataset+'\\mfcc_dev.pkl', 'wb')
+	mfcc_dev_pkl = open('data/'+dataset+'/mfcc_dev.pkl', 'wb')
 	pickle.dump(mfcc_dev, mfcc_dev_pkl)
 	mfcc_dev_pkl.close()
-	print "Dev set MFCC features saved to data\\"+dataset+"\\mfcc_dev.pkl"
+	print "Dev set MFCC features saved to data/"+dataset+"/mfcc_dev.pkl"
 
-	mfcc_test_pkl = open('data\\'+dataset+'\\mfcc_test.pkl', 'wb')
+	mfcc_test_pkl = open('data/'+dataset+'/mfcc_test.pkl', 'wb')
 	pickle.dump(mfcc_test, mfcc_test_pkl)
 	mfcc_test_pkl.close()
-	print "Test set MFCC features saved to data\\"+dataset+"\\mfcc_test.pkl"
+	print "Test set MFCC features saved to data/"+dataset+"/mfcc_test.pkl"
 
 	print "All Done!"
 
@@ -115,8 +116,8 @@ def split_and_save_data(dataset):
 
 def split_and_save_transcripts(dataset, data_split, fp_to_id):
 
-	dirname1 = "data\\wsj0_raw_data\\11-4.1\\wsj0\\transcrp\\dots\\**\\**\\*.dot"
-	dirname2 = "data\\wsj0_raw_data\\**\\wsj0\\s*_et_*\\**\\*.dot"
+	dirname1 = "data/wsj0_raw_data/11-4.1/wsj0/transcrp/dots/**/**/*.dot"
+	dirname2 = "data/wsj0_raw_data/**/wsj0/s*_et_*/**/*.dot"
 
 	fp = glob2.glob(dirname1)+glob2.glob(dirname2)
 
@@ -174,25 +175,25 @@ def split_and_save_transcripts(dataset, data_split, fp_to_id):
 
 	print "Writing Data to Files..."
 
-	labels_train_pkl = open('data\\'+dataset+'\\labels_train.pkl', 'wb')
+	labels_train_pkl = open('data/'+dataset+'/labels_train.pkl', 'wb')
 	pickle.dump(labels_train, labels_train_pkl)
 	labels_train_pkl.close()
-	print "Train set labels features saved to data\\"+dataset+"\\labels_train.pkl"
+	print "Train set labels features saved to data/"+dataset+"/labels_train.pkl"
 
-	labels_dev_pkl = open('data\\'+dataset+'\\labels_dev.pkl', 'wb')
+	labels_dev_pkl = open('data/'+dataset+'/labels_dev.pkl', 'wb')
 	pickle.dump(labels_dev, labels_dev_pkl)
 	labels_dev_pkl.close()
-	print "Dev set labels features saved to data\\"+dataset+"\\labels_dev.pkl"
+	print "Dev set labels features saved to data/"+dataset+"/labels_dev.pkl"
 
-	labels_test_pkl = open('data\\'+dataset+'\\labels_test.pkl', 'wb')
+	labels_test_pkl = open('data/'+dataset+'/labels_test.pkl', 'wb')
 	pickle.dump(labels_test, labels_test_pkl)
 	labels_test_pkl.close()
-	print "Test set labels features saved to data\\"+dataset+"\\labels_test.pkl"
+	print "Test set labels features saved to data/"+dataset+"/labels_test.pkl"
 
-	no_id_pkl = open('data\\'+dataset+'\\no_id.pkl', 'wb')
+	no_id_pkl = open('data/'+dataset+'/no_id.pkl', 'wb')
 	pickle.dump(no_id, no_id_pkl)
 	no_id_pkl.close()
-	print "Label id's with no data saved to data\\"+dataset+"\\no_id.pkl"
+	print "Label id's with no data saved to data/"+dataset+"/no_id.pkl"
 
 	print "All Done!"
 
@@ -201,5 +202,5 @@ if __name__ == "__main__":
 	dataset = 'wsj0'
 	data_split, fp_to_id = split_and_save_data(dataset)
 	#data_split = pickle.load(open('data_split.pkl', 'rb'))
-	#fp_to_id = pickle.load(open('data\\wsj0_si\\filepath_to_id_no.pkl', 'rb'))
+	#fp_to_id = pickle.load(open('data/wsj0_si/filepath_to_id_no.pkl', 'rb'))
 	split_and_save_transcripts(dataset, data_split, fp_to_id)
