@@ -25,7 +25,7 @@ NUM_CLASSES = len(get_chars_to_index_mapping()) # from utils, guarantees corresp
 
 NUM_HIDDEN_LAYERS = 2
 
-DROPOUT_KEEP_PROB = 1.0
+DROPOUT_KEEP_PROB = 0.5
 
 
 class Config:
@@ -138,9 +138,9 @@ class CTCModel():
 		forward_cell_multi = []
 		backward_cell_multi = []
 		for _ in range(NUM_HIDDEN_LAYERS):
-			forward_cell = tf.contrib.rnn.DropoutWrapper(tf.contrib.rnn.GRUCell(Config.num_hidden, activation=tf.nn.relu), input_keep_prob=self.keep_prob_placeholder, output_keep_prob=self.keep_prob_placeholder)
+			forward_cell = tf.contrib.rnn.DropoutWrapper(tf.contrib.rnn.GRUCell(Config.num_hidden), input_keep_prob=self.keep_prob_placeholder, output_keep_prob=self.keep_prob_placeholder)
 			forward_cell_multi.append(forward_cell)
-			backward_cell = tf.contrib.rnn.DropoutWrapper(tf.contrib.rnn.GRUCell(Config.num_hidden, activation=tf.nn.relu), input_keep_prob=self.keep_prob_placeholder, output_keep_prob=self.keep_prob_placeholder)
+			backward_cell = tf.contrib.rnn.DropoutWrapper(tf.contrib.rnn.GRUCell(Config.num_hidden), input_keep_prob=self.keep_prob_placeholder, output_keep_prob=self.keep_prob_placeholder)
 			backward_cell_multi.append(backward_cell)
 
 		forward_cell_multi = tf.contrib.rnn.MultiRNNCell(forward_cell_multi)
@@ -370,7 +370,7 @@ if __name__ == "__main__":
 		logs_path = "tensorboard/" + strftime("%Y_%m_%d_%H_%M_%S", gmtime()) + ("_lr=%f" % Config.lr)
 		train_dataset = load_dataset(args.train_path)
 		# uncomment to overfit data set
-		train_dataset = (train_dataset[0][:10], train_dataset[1][:10], train_dataset[2][:10])
+		# train_dataset = (train_dataset[0][:10], train_dataset[1][:10], train_dataset[2][:10])
 
 		train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches = make_batches(train_dataset, batch_size=Config.batch_size)
 		val_dataset = load_dataset(args.val_path)
