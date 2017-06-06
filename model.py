@@ -138,9 +138,9 @@ class CTCModel():
 		forward_cell_multi = []
 		backward_cell_multi = []
 		for _ in range(NUM_HIDDEN_LAYERS):
-			forward_cell = tf.contrib.rnn.DropoutWrapper(tf.contrib.rnn.GRUCell(Config.num_hidden, activation=tf.nn.relu), input_keep_prob=self.keep_prob_placeholder, output_keep_prob=self.keep_prob_placeholder)
+			forward_cell = tf.contrib.rnn.DropoutWrapper(tf.contrib.rnn.GRUCell(Config.num_hidden), input_keep_prob=self.keep_prob_placeholder, output_keep_prob=self.keep_prob_placeholder)
 			forward_cell_multi.append(forward_cell)
-			backward_cell = tf.contrib.rnn.DropoutWrapper(tf.contrib.rnn.GRUCell(Config.num_hidden, activation=tf.nn.relu), input_keep_prob=self.keep_prob_placeholder, output_keep_prob=self.keep_prob_placeholder)
+			backward_cell = tf.contrib.rnn.DropoutWrapper(tf.contrib.rnn.GRUCell(Config.num_hidden), input_keep_prob=self.keep_prob_placeholder, output_keep_prob=self.keep_prob_placeholder)
 			backward_cell_multi.append(backward_cell)
 
 		forward_cell_multi = tf.contrib.rnn.MultiRNNCell(forward_cell_multi)
