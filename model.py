@@ -370,7 +370,7 @@ if __name__ == "__main__":
 		logs_path = "tensorboard/" + strftime("%Y_%m_%d_%H_%M_%S", gmtime()) + ("_lr=%f_l2=%f" % (Config.lr, Config.l2_lambda))
 		train_dataset = load_dataset(args.train_path)
 		# uncomment to overfit data set
-		train_dataset = (train_dataset[0][:10], train_dataset[1][:10], train_dataset[2][:10])
+		# train_dataset = (train_dataset[0][:10], train_dataset[1][:10], train_dataset[2][:10])
 
 		train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches = make_batches(train_dataset, batch_size=Config.batch_size)
 		val_dataset = load_dataset(args.val_path)
