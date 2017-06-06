@@ -25,6 +25,8 @@ NUM_CLASSES = len(get_chars_to_index_mapping()) # from utils, guarantees corresp
 
 NUM_HIDDEN_LAYERS = 2
 
+DROPOUT_KEEP_PROB = 1.0
+
 
 class Config:
 	"""Holds model hyperparams and data information.
@@ -42,8 +44,8 @@ class Config:
 	num_classes = NUM_CLASSES
 	num_hidden = 100
 
-	num_epochs = 50
-	l2_lambda = 0.01
+	num_epochs = 100
+	l2_lambda = 0.00
 	lr = 1e-3
 
 
@@ -78,20 +80,18 @@ class CTCModel():
 
 		(Don't change the variable names)
 		"""
-		inputs_placeholder = None
-		targets_placeholder = None
-		seq_lens_placeholder = None
-
 		inputs_placeholder = tf.placeholder(tf.float32, shape=(None, None, Config.num_final_features), name='inputs_placeholder')
 		targets_placeholder = tf.sparse_placeholder(tf.int32, name='targets_placeholder')
 		seq_lens_placeholder = tf.placeholder(tf.int32, shape=(None), name='seq_lens_placeholder')
+		keep_prob_placeholder = tf.placeholder(tf.float32, name='keep_prob_placeholder')
 
 		self.inputs_placeholder = inputs_placeholder
 		self.targets_placeholder = targets_placeholder
 		self.seq_lens_placeholder = seq_lens_placeholder
+		self.keep_prob_placeholder = keep_prob_placeholder
 
 
-	def create_feed_dict(self, inputs_batch, targets_batch, seq_lens_batch):
+	def create_feed_dict(self, inputs_batch, targets_batch, seq_lens_batch, keep_prob):
 		"""Creates the feed_dict for the digit recognizer.
 
 		A feed_dict takes the form of:
@@ -114,12 +114,13 @@ class CTCModel():
 		feed_dict = {
 				self.inputs_placeholder: inputs_batch,
 				self.targets_placeholder: targets_batch,
-				self.seq_lens_placeholder: seq_lens_batch
+				self.seq_lens_placeholder: seq_lens_batch,
+				self.keep_prob_placeholder: keep_prob
 		}
 
 		return feed_dict
 
-	def add_prediction_op(self):
+	def add_prediction_op(self, train):
 		"""Applies a GRU RNN over the input data, then an affine layer projection. Steps to complete 
 		in this function: 
 
@@ -134,13 +135,12 @@ class CTCModel():
 			* W should be shape [num_hidden, num_classes]. num_classes for our dataset is 12
 			* tf.contrib.rnn.GRUCell, tf.contrib.rnn.MultiRNNCell and tf.nn.dynamic_rnn are of interest
 		"""
-		logits = None 
 		forward_cell_multi = []
 		backward_cell_multi = []
 		for _ in range(NUM_HIDDEN_LAYERS):
-			forward_cell = tf.contrib.rnn.GRUCell(Config.num_hidden, activation=tf.nn.relu)
+			forward_cell = tf.contrib.rnn.DropoutWrapper(tf.contrib.rnn.GRUCell(Config.num_hidden, activation=tf.nn.relu), input_keep_prob=self.keep_prob_placeholder, output_keep_prob=self.keep_prob_placeholder)
 			forward_cell_multi.append(forward_cell)
-			backward_cell = tf.contrib.rnn.GRUCell(Config.num_hidden, activation=tf.nn.relu)
+			backward_cell = tf.contrib.rnn.DropoutWrapper(tf.contrib.rnn.GRUCell(Config.num_hidden, activation=tf.nn.relu), input_keep_prob=self.keep_prob_placeholder, output_keep_prob=self.keep_prob_placeholder)
 			backward_cell_multi.append(backward_cell)
 
 		forward_cell_multi = tf.contrib.rnn.MultiRNNCell(forward_cell_multi)
@@ -227,9 +227,9 @@ class CTCModel():
 
 
 	# This actually builds the computational graph 
-	def build(self):
+	def build(self, train):
 		self.add_placeholders()
-		self.add_prediction_op()
+		self.add_prediction_op(train)
 		self.add_loss_op()
 		self.add_training_op()       
 		self.add_decoder_and_cer_op()
@@ -237,7 +237,10 @@ class CTCModel():
 		
 
 	def train_on_batch(self, session, train_inputs_batch, train_targets_batch, train_seq_len_batch, train=True):
-		feed = self.create_feed_dict(train_inputs_batch, train_targets_batch, train_seq_len_batch)
+		keep_prob = 1.0
+		if train:
+			keep_prob = DROPOUT_KEEP_PROB
+		feed = self.create_feed_dict(train_inputs_batch, train_targets_batch, train_seq_len_batch, keep_prob)
 		batch_cost, cer, batch_num_valid_ex, summary = session.run([self.loss, self.cer, self.num_valid_examples, self.merged_summary_op], feed)
 
 		if math.isnan(batch_cost): # basically all examples in this batch have been skipped 
@@ -247,12 +250,12 @@ class CTCModel():
 		return batch_cost, cer, summary
 
 	def print_results(self, session, train_inputs_batch, train_targets_batch, train_seq_len_batch):
-		train_feed = self.create_feed_dict(train_inputs_batch, train_targets_batch, train_seq_len_batch)
+		train_feed = self.create_feed_dict(train_inputs_batch, train_targets_batch, train_seq_len_batch, 1.0)
 		train_first_batch_preds = session.run(self.decoded_sequence, feed_dict=train_feed)
 		compare_predicted_to_true(train_first_batch_preds, train_targets_batch)        
 
-	def __init__(self):
-		self.build()
+	def __init__(self, train=True):
+		self.build(train)
 
 def load_args():
 	parser = argparse.ArgumentParser()
@@ -269,9 +272,9 @@ def train_model(logs_path, num_batches_per_epoch,
 		train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches,
 		val_feature_minibatches, val_labels_minibatches, val_seqlens_minibatches):
 	with tf.Graph().as_default():
-		model = CTCModel()
+		model = CTCModel(train=True)
 		init = tf.global_variables_initializer()
-		saver = tf.train.Saver()
+		saver = tf.train.Saver(max_to_keep=None)
 		with tf.Session() as session:
 			# Initializate the weights and biases
 			session.run(init)
@@ -305,7 +308,10 @@ def train_model(logs_path, num_batches_per_epoch,
 
 				if args.print_every is not None and (curr_epoch + 1) % args.print_every == 0: 
 					batch_ii = 0
+					print("Train set sample predictions:")
 					model.print_results(session, train_feature_minibatches[batch_ii], train_labels_minibatches[batch_ii], train_seqlens_minibatches[batch_ii])
+					print("Val set sample predictions:")
+					model.print_results(session, val_feature_minibatches[batch_ii][:10], val_labels_minibatches[batch_ii][:10], val_seqlens_minibatches[batch_ii][:10])
 				if args.save_every is not None and args.save_to_file is not None and (curr_epoch + 1) % args.save_every == 0:
 					saver.save(session, args.save_to_file, global_step=curr_epoch + 1)
 				curr_epoch += 1
@@ -329,7 +335,8 @@ def test(test_dataset, trained_weights_file):
 				'targets_placeholder/indices:0': test_labels_minibatches[0][0],
 				'targets_placeholder/values:0': test_labels_minibatches[0][1],
 				'targets_placeholder/shape:0': test_labels_minibatches[0][2],
-				'seq_lens_placeholder:0': test_seqlens_minibatches[0]
+				'seq_lens_placeholder:0': test_seqlens_minibatches[0],
+				'keep_prob_placeholder:0': 1.0
 			}
 
 			test_cer = session.run([cer], test_feed_dict)
@@ -346,7 +353,8 @@ def test(test_dataset, trained_weights_file):
 					'targets_placeholder/indices:0': test_labels_minibatches[batch_ii][0],
 					'targets_placeholder/values:0': test_labels_minibatches[batch_ii][1],
 					'targets_placeholder/shape:0': test_labels_minibatches[batch_ii][2],
-					'seq_lens_placeholder:0': test_seqlens_minibatches[batch_ii]
+					'seq_lens_placeholder:0': test_seqlens_minibatches[batch_ii],
+					'keep_prob_placeholder:0': 1.0
 				}
 				train_first_batch_preds = session.run(decoded_sequence, feed_dict=test_results_feed_dict)
 				compare_predicted_to_true(train_first_batch_preds, test_labels_minibatches[batch_ii]) 
