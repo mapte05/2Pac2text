@@ -25,7 +25,7 @@ NUM_CLASSES = len(get_chars_to_index_mapping()) # from utils, guarantees corresp
 
 NUM_HIDDEN_LAYERS = 2
 
-DROPOUT_KEEP_PROB = 0.5
+DROPOUT_KEEP_PROB = 1
 
 
 class Config:
@@ -259,8 +259,8 @@ class CTCModel():
 
 def load_args():
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--train_path', nargs='?', default='./mfcc_stuff/cmu_train.dat', type=str, help="Give path to training data")
-	parser.add_argument('--val_path', nargs='?', default='./mfcc_stuff/cmu_val.dat', type=str, help="Give path to val data")
+	parser.add_argument('--train_path', nargs='?', default='./data/cmu/cmu_all6_train.dat', type=str, help="Give path to training data")
+	parser.add_argument('--val_path', nargs='?', default='./data/cmu/cmu_all6_val.dat', type=str, help="Give path to val data")
 	parser.add_argument('--save_every', nargs='?', default=None, type=int, help="Save model every x iterations. Default is not saving at all.")
 	parser.add_argument('--print_every', nargs='?', default=10, type=int, help="Print some training and val examples (true and predicted sequences) every x iterations. Default is 10")
 	parser.add_argument('--save_to_file', nargs='?', default='saved_models/saved_model_epoch', type=str, help="Provide filename prefix for saving intermediate models")
@@ -372,7 +372,8 @@ if __name__ == "__main__":
 		logs_path = "tensorboard/" + strftime("%Y_%m_%d_%H_%M_%S", gmtime()) + ("_lr=%f" % Config.lr)
 		train_dataset = load_dataset(args.train_path)
 		# uncomment to overfit data set
-		# train_dataset = (train_dataset[0][:10], train_dataset[1][:10], train_dataset[2][:10])
+		OVERFIT_NUM = 5
+		train_dataset = (train_dataset[0][:OVERFIT_NUM], train_dataset[1][:OVERFIT_NUM], train_dataset[2][:OVERFIT_NUM])
 
 		train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches = make_batches(train_dataset, batch_size=Config.batch_size)
 		val_dataset = load_dataset(args.val_path)
