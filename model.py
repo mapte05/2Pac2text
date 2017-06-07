@@ -42,10 +42,10 @@ class Config:
 	batch_size = 16
 
 	num_classes = NUM_CLASSES
-	num_hidden = 100
+	num_hidden = 50
 
 	num_epochs = 100
-	l2_lambda = 0.00
+	l2_lambda = 1e-4
 	lr = 1e-3
 
 
@@ -150,7 +150,7 @@ class CTCModel():
 		print(outputs[0].shape)
 		print("outputs[1] shape: ")
 		print(outputs[1].shape)
-		print(outputs.shape)
+		print(len(outputs))
 		outputs = tf.concat(outputs, 2)
 		W = tf.get_variable(name="W", shape=[Config.num_hidden * 2, Config.num_classes], dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer())
 		b = tf.get_variable(name="b", shape=(Config.num_classes,), dtype=tf.float32, initializer=tf.zeros_initializer())
@@ -377,8 +377,8 @@ if __name__ == "__main__":
 		logs_path = "tensorboard/" + strftime("%Y_%m_%d_%H_%M_%S", gmtime()) + ("_lr=%f" % Config.lr)
 		train_dataset = load_dataset(args.train_path)
 		# uncomment to overfit data set
-		OVERFIT_NUM = 5
-		train_dataset = (train_dataset[0][:OVERFIT_NUM], train_dataset[1][:OVERFIT_NUM], train_dataset[2][:OVERFIT_NUM])
+		# OVERFIT_NUM = 5
+		# train_dataset = (train_dataset[0][:OVERFIT_NUM], train_dataset[1][:OVERFIT_NUM], train_dataset[2][:OVERFIT_NUM])
 
 		train_feature_minibatches, train_labels_minibatches, train_seqlens_minibatches = make_batches(train_dataset, batch_size=Config.batch_size)
 		val_dataset = load_dataset(args.val_path)
