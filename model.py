@@ -39,7 +39,7 @@ class Config:
 	num_mfcc_features = 13
 	num_final_features = num_mfcc_features * (2 * context_size + 1)
 
-	batch_size = 64
+	batch_size = 16
 
 	num_classes = NUM_CLASSES
 	num_hidden = 100
@@ -145,8 +145,8 @@ class CTCModel():
 
 		forward_cell_multi = tf.contrib.rnn.MultiRNNCell(forward_cell_multi)
 		backward_cell_multi = tf.contrib.rnn.MultiRNNCell(backward_cell_multi)
-		tuple_layer_outputs, _ = tf.nn.bidirectional_dynamic_rnn(forward_cell_multi, backward_cell_multi, self.inputs_placeholder, sequence_length=self.seq_lens_placeholder, dtype=tf.float32)
-		outputs = tf.concat(tuple_layer_outputs, 2)
+		outputs, _ = tf.nn.bidirectional_dynamic_rnn(forward_cell_multi, backward_cell_multi, self.inputs_placeholder, sequence_length=self.seq_lens_placeholder, dtype=tf.float32)
+		outputs = tf.concat(outputs, 2)
 		W = tf.get_variable(name="W", shape=[Config.num_hidden * 2, Config.num_classes], dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer())
 		b = tf.get_variable(name="b", shape=(Config.num_classes,), dtype=tf.float32, initializer=tf.zeros_initializer())
 		max_timesteps = tf.shape(outputs)[1]
