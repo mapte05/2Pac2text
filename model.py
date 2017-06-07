@@ -39,7 +39,7 @@ class Config:
 	num_mfcc_features = 13
 	num_final_features = num_mfcc_features * (2 * context_size + 1)
 
-	batch_size = 16
+	batch_size = 64
 
 	num_classes = NUM_CLASSES
 	num_hidden = 100
