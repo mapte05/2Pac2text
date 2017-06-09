@@ -8,7 +8,7 @@ mkdir -p data/cmu
 # echo -------------
 
 echo Getting cmu_all6_val_noisy.dat
-wget -O cmu_all6_val_noisy.dat https://doc-0g-48-docs.googleusercontent.com/docs/securesc/ha0ro937gcuc7l7deffksulhg5h7mbp1/47kd6eh1vh2enl3uu0t7h60r3f5b7keh/1496865600000/13452926836532438358/*/0B38oulL41I1NenN5MVFqenJJSkk?e=download
+wget -O cmu_all6_val_noisy.dat /securesc/ha0ro937gcuc7l7deffksulhg5h7mbp1/47kd6eh1vh2enl3uu0t7h60r3f5b7keh/1496865600000/13452926836532438358/*/0B38oulL41I1NenN5MVFqenJJSkk?e=download
 mv cmu_all6_val_noisy.dat data/cmu/cmu_all6_val_noisy.dat
 echo -------------
 
