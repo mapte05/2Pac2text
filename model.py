@@ -42,7 +42,7 @@ class Config:
 	batch_size = 16
 
 	num_classes = NUM_CLASSES
-	num_hidden = 50
+	num_hidden = 100
 
 	num_epochs = 100
 	l2_lambda = 1e-4
@@ -143,10 +143,13 @@ class CTCModel():
 			backward_cell = tf.contrib.rnn.DropoutWrapper(tf.contrib.rnn.GRUCell(Config.num_hidden, activation=tf.nn.relu), input_keep_prob=self.keep_prob_placeholder, output_keep_prob=self.keep_prob_placeholder)
 			backward_cell_multi.append(backward_cell)
 
-		forward_cell_multi = tf.contrib.rnn.MultiRNNCell(forward_cell_multi)
-		backward_cell_multi = tf.contrib.rnn.MultiRNNCell(backward_cell_multi)
-		outputs, _ = tf.nn.bidirectional_dynamic_rnn(forward_cell_multi, backward_cell_multi, self.inputs_placeholder, sequence_length=self.seq_lens_placeholder, dtype=tf.float32)
-		outputs = tf.concat(outputs, 2)
+		# forward_cell_multi = tf.contrib.rnn.MultiRNNCell(forward_cell_multi)
+		# backward_cell_multi = tf.contrib.rnn.MultiRNNCell(backward_cell_multi)
+		# outputs, _ = tf.nn.bidirectional_dynamic_rnn(forward_cell_multi, backward_cell_multi, self.inputs_placeholder, sequence_length=self.seq_lens_placeholder, dtype=tf.float32)
+		# outputs = tf.concat(outputs, 2)
+		
+		outputs, output_state_fw, output_state_bw = tf.contrib.rnn.stack_bidirectional_dynamic_rnn(forward_cell_multi, backward_cell_multi, self.inputs_placeholder, sequence_length=self.seq_lens_placeholder, dtype=tf.float32)
+
 		W = tf.get_variable(name="W", shape=[Config.num_hidden * 2, Config.num_classes], dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer())
 		b = tf.get_variable(name="b", shape=(Config.num_classes,), dtype=tf.float32, initializer=tf.zeros_initializer())
 		max_timesteps = tf.shape(outputs)[1]
