@@ -8,7 +8,7 @@ mkdir -p data/cmu
 # echo -------------
 
 echo Getting cmu_all6_val_noisy.dat
-wget -O cmu_all6_val_noisy.dat https://doc-0g-48-docs.googleusercontent.com/docs/securesc/ha0ro937gcuc7l7deffksulhg5h7mbp1/47kd6eh1vh2enl3uu0t7h60r3f5b7keh/1496865600000/13452926836532438358/*/0B38oulL41I1NenN5MVFqenJJSkk?e=download
+wget -O cmu_all6_val_noisy.dat https://doc-0g-48-docs.googleusercontent.com/docs/securesc/ha0ro937gcuc7l7deffksulhg5h7mbp1/6if5eo4h4obkc4u6i9tlu0ci74ll6vvb/1496980800000/13452926836532438358/*/0B38oulL41I1NenN5MVFqenJJSkk?e=download
 mv cmu_all6_val_noisy.dat data/cmu/cmu_all6_val_noisy.dat
 echo -------------
 
@@ -18,7 +18,7 @@ echo -------------
 # echo -------------
 
 echo Getting cmu_all6_train_noisy.dat
-wget -O cmu_all6_train_noisy.dat https://doc-04-48-docs.googleusercontent.com/docs/securesc/ha0ro937gcuc7l7deffksulhg5h7mbp1/41f8e9f0mslv45ij8t2rnj279gqo6u9v/1496865600000/13452926836532438358/*/0B38oulL41I1NdnJWYk8wSEJ2UGc?e=download
+wget -O cmu_all6_train_noisy.dat https://doc-04-48-docs.googleusercontent.com/docs/securesc/ha0ro937gcuc7l7deffksulhg5h7mbp1/6t08b8jdh08dmm21uhjj77ed48vnt0g5/1496980800000/13452926836532438358/*/0B38oulL41I1NdnJWYk8wSEJ2UGc?e=download
 mv cmu_all6_train_noisy.dat data/cmu/cmu_all6_train_noisy.dat
 echo -------------
 
@@ -35,12 +35,12 @@ echo -------------
 # echo -------------
 
 echo Getting cmu_6_warped_val.dat
-wget -O cmu_6_warped_val.dat https://doc-10-48-docs.googleusercontent.com/docs/securesc/ha0ro937gcuc7l7deffksulhg5h7mbp1/e9s11a8h35atd6i37mumgocb1th6j7bf/1496865600000/13452926836532438358/*/0B38oulL41I1NMjBCckdocE5JN1E?e=download
+wget -O cmu_6_warped_val.dat https://doc-10-48-docs.googleusercontent.com/docs/securesc/ha0ro937gcuc7l7deffksulhg5h7mbp1/vde8f6n7asi5litlhdkgkr2chcudmaah/1496980800000/13452926836532438358/*/0B38oulL41I1NMjBCckdocE5JN1E?e=download
 mv cmu_6_warped_val.dat data/cmu/cmu_6_warped_val.dat
 echo -------------
 
 echo Getting cmu_6_warped_train.dat
-wget -O cmu_6_warped_train.dat https://doc-0k-48-docs.googleusercontent.com/docs/securesc/ha0ro937gcuc7l7deffksulhg5h7mbp1/1ubk5hgje512n7h6s5s8uqrq6ojig6s9/1496865600000/13452926836532438358/*/0B38oulL41I1NNUNYanZRZWVDSEU?e=download
+wget -O cmu_6_warped_train.dat https://doc-0k-48-docs.googleusercontent.com/docs/securesc/ha0ro937gcuc7l7deffksulhg5h7mbp1/7l6lbol1ckh4frqtphi1g731getuc172/1496980800000/13452926836532438358/*/0B38oulL41I1NNUNYanZRZWVDSEU?e=download
 mv cmu_6_warped_train.dat data/cmu/cmu_6_warped_train.dat
 echo -------------
 
